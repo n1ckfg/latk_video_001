@@ -3,7 +3,10 @@ class FloatToPixel {
   PShape inputShape;
   PGraphics pgRgb, pgX, pgY, pgZ;
   int w, h;
-
+  int len;
+  color[] pixelColor;
+  float[] pixelX, pixelY, pixelZ;
+  
   FloatToPixel() {
     w = width/2;
     h = height/2;
@@ -11,6 +14,12 @@ class FloatToPixel {
     pgX = createGraphics(w, h);
     pgY = createGraphics(w, h);
     pgZ = createGraphics(w, h);
+    
+    len = w * h;
+    pixelColor = new color[len];
+    pixelX = new float[len];
+    pixelY = new float[len];
+    pixelZ = new float[len];
     
     init();
   }

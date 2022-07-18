@@ -1,15 +1,46 @@
+import peasy.PeasyCam;
+
+PeasyCam cam;
+PShape pod;
+MeshObj podObj;
 
 FloatToPixel f2p;
 int maxColor = 255 * 255 * 255;
+GameState gs;
 
 void setup() {
-  size(1024, 1024);
+  size(1024, 1024, P3D);
+  gs = GameState.OBJ;
+
+  cam = new PeasyCam(this, 400);
+  pod = loadShape("battle_pod_tri.obj");
+  podObj = new MeshObj(pod);
+  
   f2p = new FloatToPixel();
 }
 
 void draw() {
   background(0);
-  f2p.draw();
+  
+  switch (gs) {
+    case OBJ:
+      lights();
+      pushMatrix();
+      translate(width/2, height/2, -500);
+      scale(1000, 1000, 1000);
+      rotateX(radians(180));
+      rotateY(radians(90));
+      shape(pod, 0, 0);
+      popMatrix();
+      break;
+    case F2P:
+      f2p.draw();
+      break;
+    case P2F:
+      break;
+  }
+  
+  surface.setTitle("" + frameRate);
 }
 
 color getColorFromInt(int val) {
