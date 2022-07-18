@@ -35,6 +35,10 @@
 	            return asin(_BaselineLength * sin(_SphericalAngle)) / asin(d);
 	        }
 
+			float rand(vec2 co){
+			    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+			}
+
 			void main() {
 			    vUv = uv;
 			    vec2 uv2 = vec2(uv.x, uv.y * 0.5);
@@ -44,7 +48,7 @@
 			    //vec3 newPosition = position + normal * displacement;
 
 			    float disp = getDepthSpherical(col.x);
-			    vec3 newPosition = normal * clamp(disp, -_Maximum, 0.0) * _Displacement;
+			    vec3 newPosition = vec3(col.x, col.y, col.z) * clamp(disp, -_Maximum, 0.0) * _Displacement;
 			    newPosition.y *= -1.0;
 
 			    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
