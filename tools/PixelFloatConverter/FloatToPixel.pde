@@ -4,42 +4,46 @@ class FloatToPixel {
   PGraphics pgRgb, pgX, pgY, pgZ;
   int w, h;
   int len;
-  color[] pixelColor;
-  float[] pixelX, pixelY, pixelZ;
+  PointsObj po;
   
-  FloatToPixel() {
-    w = width/2;
-    h = height/2;
-    pgRgb = createGraphics(w, h);
-    pgX = createGraphics(w, h);
-    pgY = createGraphics(w, h);
-    pgZ = createGraphics(w, h);
-    
-    len = w * h;
-    pixelColor = new color[len];
-    pixelX = new float[len];
-    pixelY = new float[len];
-    pixelZ = new float[len];
+  FloatToPixel(PointsObj _po) {
+    po = _po;  
     
     init();
   }
   
   void init() {
-    pgRgb.beginDraw();
-    pgRgb.background(127);
-    pgRgb.endDraw();
+    w = width/2;
+    h = height/2;
+    
+    pgRgb = createGraphics(w, h, P2D);
+    pgX = createGraphics(w, h, P2D);
+    pgY = createGraphics(w, h, P2D);
+    pgZ = createGraphics(w, h, P2D);
 
-    pgX.beginDraw();
-    pgX.background(127, 0, 0);
-    pgX.endDraw();
+    pgRgb.loadPixels();
+    pgX.loadPixels();
+    pgY.loadPixels();
+    pgZ.loadPixels();
     
-    pgY.beginDraw();
-    pgY.background(0, 127, 0);
-    pgY.endDraw();
+    if (po.points.size() < w * h){
+      len = po.points.size();
+    } else {
+      len = w * h;
+    }
     
-    pgZ.beginDraw();
-    pgZ.background(0, 0, 127);
-    pgZ.endDraw();
+    for (int i=0; i<len; i++) {
+      PointData pd = po.points.get(i);
+      pgRgb.pixels[i] = pd.col;
+      pgX.pixels[i] = int(100000 * pd.pos.x);
+      pgY.pixels[i] = int(100000 * pd.pos.y);
+      pgZ.pixels[i] = int(100000 * pd.pos.z);
+    }
+    
+    pgRgb.updatePixels();
+    pgX.updatePixels();
+    pgY.updatePixels();
+    pgZ.updatePixels();
   }
   
   void draw() {

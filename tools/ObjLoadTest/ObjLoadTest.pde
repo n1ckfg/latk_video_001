@@ -17,4 +17,6 @@ void draw() {
   scale(100, 100, 100);
   po.draw();
   popMatrix();
+
+  surface.setTitle("" + frameRate);
 }
