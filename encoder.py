@@ -137,10 +137,10 @@ def main():
         imgRgbPixels = imgRgb.load()
 
         for i, vertexColor in enumerate(vertexColors):
-            color = (vertexColor[0], vertexColor[1], vertexColor[2])
+            color = (int(vertexColor[0] * 255), int(vertexColor[1] * 255), int(vertexColor[2] * 255))
 
-            x, y = xyFromLoc(i, 512)
-            imgRgbPixels[x, y] = color
+            ix, iy = xyFromLoc(i, 512)
+            imgRgbPixels[ix, iy] = color
 
         vertexPositions = ms.current_mesh().vertex_matrix()
 
@@ -155,9 +155,11 @@ def main():
             x = remap(vert[0], localDims[0], localDims[1], normVals[0], normVals[1])
             y = remap(vert[1], localDims[2], localDims[3], normVals[2], normVals[3])
             z = remap(vert[2], localDims[4], localDims[5], normVals[4], normVals[5])
-            imgXPixels[i] = int(maxIntVal * x)
-            imgYPixels[i] = int(maxIntVal * y)
-            imgZPixels[i] = int(maxIntVal * z)
+
+            ix, iy = xyFromLoc(i, 512)
+            imgXPixels[ix, iy] = int(maxIntVal * x)
+            imgYPixels[ix, iy] = int(maxIntVal * y)
+            imgZPixels[ix, iy] = int(maxIntVal * z)
 
         imgFinal = Image.new("RGB", (1024, 1024))
         imgFinal.paste(imgRgb, (0, 0))
