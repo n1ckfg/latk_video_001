@@ -22,25 +22,28 @@ void setup() {
   p2f = new PixelToFloat(f2p);
 }
 
+void renderPointsObj(PointsObj _po) {
+  pushMatrix();
+  strokeWeight(strokeWeightVal);
+  translate(-width/8, height/8, 0);
+  scale(scaleVal, scaleVal, scaleVal);
+  rotateX(radians(180));
+  _po.draw();
+  popMatrix();
+}
+
 void draw() {
   background(0);
   
   switch (gs) {
     case OBJ:
-      lights();
-      pushMatrix();
-      strokeWeight(strokeWeightVal);
-      translate(-width/8, height/8, 0);
-      scale(scaleVal, scaleVal, scaleVal);
-      rotateX(radians(180));
-      po.draw();
-      popMatrix();
+      renderPointsObj(po);
       break;
     case F2P:
       f2p.draw();
       break;
     case P2F:
-      p2f.draw();
+      renderPointsObj(p2f.po);
       break;
   }
   
