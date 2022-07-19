@@ -1,1 +1,3 @@
 pymeshlab
+pillow
+numpy

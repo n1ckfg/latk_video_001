@@ -1,11 +1,8 @@
-STYLE=anime_style
-#STYLE=opensketch_style
-RGB_PATH=input
-DEPTH_PATH=output
-RESULT_PATH=results/$STYLE
-MAX_FRAMES=9999
-RENDER_RES=480 # 480
+INPUT_PATH=input
+OUTPUT_PATH=output
 
-rm -rf $RESULT_PATH
-python encoder.py --name $STYLE --dataroot $RGB_PATH --how_many $MAX_FRAMES --size $RENDER_RES
+rm $INPUT_PATH/*_resampled.ply
+rm -rf $OUTPUT_PATH
+mkdir $OUTPUT_PATH
+python encoder.py -- $INPUT_PATH $OUTPUT_PATH
 
