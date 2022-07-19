@@ -3,6 +3,13 @@ import os
 from pathlib import Path
 import pymeshlab as ml
 import numpy as np
+import PIL.ImageDraw as ImageDraw
+import PIL.Image as Image
+
+def xyFromLoc(loc, width):
+    x = loc % width
+    y = (loc - x) / width
+    return x, y
 
 def remap(value, min1, max1, min2, max2):
     return np.interp(value,[min1, max1],[min2, max2])
@@ -15,6 +22,8 @@ def changeExtension(_url, _newExt, _append=None):
     if (_append != None):
         returns += _append
     returns += _newExt
+
+    print ("New url: " + returns)
     return returns
 
 def main():
@@ -24,6 +33,8 @@ def main():
     inputPath = argv[0] 
     outputPath = argv[1] 
    
+    maxIntVal = 255 * 255 * 255
+
     seqMinX = 0
     seqMaxX = 0
     seqMinY = 0
@@ -64,10 +75,9 @@ def main():
         else:
             ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=False)
         ms.vertex_attribute_transfer(sourcemesh=0, targetmesh=1)
-        ms.save_current_mesh(changeExtension(urls[i], "ply", "_resampled"), save_vertex_color=True)
+        ms.save_current_mesh(changeExtension(urls[i], ".ply", "_resampled"), save_vertex_color=True)
         
         vertexPositions = ms.current_mesh().vertex_matrix()
-        vertexColors = ms.current_mesh().vertex_color_matrix()
 
         for vert in vertexPositions:
             x = vert[0]
@@ -121,26 +131,44 @@ def main():
         ms.load_new_mesh(urls[i])
         mesh = ms.current_mesh()
        
-        vertexPositions = ms.current_mesh().vertex_matrix()
         vertexColors = ms.current_mesh().vertex_color_matrix()
 
-        for vert in vertexPositions:
-            vert[0] = remap(vert[0], dimVals[0], dimVals[1], dims * normVals[0], (dims * normVals[1]) - 1)
-            vert[1] = remap(vert[1], dimVals[2], dimVals[3], dims * normVals[2], (dims * normVals[3]) - 1)
-            vert[2] = remap(vert[2], dimVals[4], dimVals[5], dims * normVals[4], (dims * normVals[5]) - 1)
+        imgRgb = Image.new("RGB", (512, 512))
+        imgRgbPixels = imgRgb.load()
 
-        for vertexColor in vertexColors:
-            color = (vertexColor[0], vertexColor[1], vertexColor[2], 1.0)
-            color = (color[0] * color[0], color[1] * color[1], color[2] * color[2], 1.0)
-            la.layers[0].frames[counter].strokes[strokeCounter].points[pointCounter].vertex_color = color
-            pointCounter += 1
-            if (pointCounter > len(la.layers[0].frames[counter].strokes[strokeCounter].points)-1):
-                pointCounter = 0
-                strokeCounter += 1 
-        
+        for i, vertexColor in enumerate(vertexColors):
+            color = (vertexColor[0], vertexColor[1], vertexColor[2])
+
+            x, y = xyFromLoc(i, 512)
+            imgRgbPixels[x, y] = color
+
+        vertexPositions = ms.current_mesh().vertex_matrix()
+
+        imgX = Image.new("RGB", (512, 512))
+        imgXPixels = imgX.load()
+        imgY = Image.new("RGB", (512, 512))
+        imgYPixels = imgY.load()
+        imgZ = Image.new("RGB", (512, 512))
+        imgZPixels = imgZ.load()
+
+        for vert in vertexPositions:
+            x = remap(vert[0], localDims[0], localDims[1], normVals[0], normVals[1])
+            y = remap(vert[1], localDims[2], localDims[3], normVals[2], normVals[3])
+            z = remap(vert[2], localDims[4], localDims[5], normVals[4], normVals[5])
+            imgXPixels[i] = int(maxIntVal * x)
+            imgYPixels[i] = int(maxIntVal * y)
+            imgZPixels[i] = int(maxIntVal * z)
+
+        imgFinal = Image.new("RGB", (1024, 1024))
+        imgFinal.paste(imgRgb, (0, 0))
+        imgFinal.paste(imgX, (512, 0))
+        imgFinal.paste(imgY, (512, 512))
+        imgFinal.paste(imgZ, (0, 512))
+        imgFinal.convert("RGB").save(outputPath + "/output" + str(i) + ".png")
+
         print("Finished frame " + str(counter+1))
         counter += 1
 
-    os.system("ffmpeg -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -r 30 output.mp4")
+    #os.system("ffmpeg -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -r 30 output.mp4")
 
 main()
