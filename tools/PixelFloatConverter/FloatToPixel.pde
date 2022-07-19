@@ -1,14 +1,13 @@
 class FloatToPixel {
   
-  PShape inputShape;
+  PointsObj po;
   PGraphics pgRgb, pgX, pgY, pgZ;
   int w, h;
   int len;
-  PointsObj po;
+  float maxIntVal = 255 * 255 * 255;
   
   FloatToPixel(PointsObj _po) {
     po = _po;  
-    
     init();
   }
   
@@ -35,9 +34,9 @@ class FloatToPixel {
     for (int i=0; i<len; i++) {
       PointData pd = po.points.get(i);
       pgRgb.pixels[i] = pd.col;
-      pgX.pixels[i] = getColorFromInt(int(100000 * pd.pos.x));
-      pgY.pixels[i] = getColorFromInt(int(100000 * pd.pos.y));
-      pgZ.pixels[i] = getColorFromInt(int(100000 * pd.pos.z));
+      pgX.pixels[i] = getColorFromInt(int(maxIntVal * pd.pos.x));
+      pgY.pixels[i] = getColorFromInt(int(maxIntVal * pd.pos.y));
+      pgZ.pixels[i] = getColorFromInt(int(maxIntVal * pd.pos.z));
     }
     
     pgRgb.updatePixels();
