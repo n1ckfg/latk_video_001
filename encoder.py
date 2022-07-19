@@ -1,22 +1,16 @@
 import sys
 import os
-import xml.etree.ElementTree as etree
 from pathlib import Path
 import pymeshlab as ml
 import numpy as np
-import latk
 
 def main():
     argv = sys.argv
     argv = argv[argv.index("--") + 1:] # get all args after "--"
 
-    inputPath = argv[0] # "output"
-    inputExt = argv[1] # "_final.ply"
-    samplePercentage = float(argv[2]) #0.1
-    minStrokePoints = int(argv[3]) #2
+    inputPath = argv[0] 
+    outputPath = argv[1] 
 
-    la = latk.Latk()
-    la.layers.append(latk.LatkLayer())
     counter = 0
 
     urls = []
@@ -27,13 +21,6 @@ def main():
             urls.append(url)
     urls.sort()
 
-    la = latk.Latk()
-    layer = latk.LatkLayer()
-    la.layers.append(layer)
-    for i in range(0, len(urls)):
-        frame = latk.LatkFrame(frame_number=i)
-        la.layers[0].frames.append(frame)
-
     for i in range(0, len(urls)):  
         print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
 
@@ -41,46 +28,15 @@ def main():
         ms.load_new_mesh(urls[i])
         mesh = ms.current_mesh()
 
-        newSampleNum = int(mesh.vertex_number() * samplePercentage)
+        newSampleNum = 256 * 256 #mesh.vertex_number()
         if (mesh.edge_number() == 0 and mesh.face_number() == 0):
             ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=True)
         else:
             ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=False)
-        ms.surface_reconstruction_ball_pivoting()
         ms.vertex_attribute_transfer(sourcemesh=0, targetmesh=1)
-        ms.save_current_mesh("input.ply", save_vertex_color=True)
-
-        os.system("SynDraw -p test.template")
-
-        print("parsing SVG")
-        tree = etree.parse("out.svg")
-        root = tree.getroot()
-        for element in root:
-            if (element.tag.endswith("polyline")):
-                points = element.get("points3d").split(" ")
-                lPoints = []
-                for point in points:
-                    point2 = point.split(",")
-                    try:
-                        point3 = (float(point2[0]), float(point2[2]), float(point2[1]))
-                        lPoints.append(latk.LatkPoint(point3))
-                    except:
-                        pass
-                if (len(lPoints) >= minStrokePoints):
-                    la.layers[0].frames[counter].strokes.append(latk.LatkStroke(lPoints))
-
-        allPoints = []
-        for stroke in la.layers[0].frames[counter].strokes:
-            for point in stroke.points:
-                allPoints.append([point.co[0], point.co[2], point.co[1]])
-        vertices = np.array(allPoints)
-        faces = np.array([[0,0,0]])
-        mesh = ml.Mesh(vertices, faces)
-        ms.add_mesh(mesh)
-        ms.vertex_attribute_transfer(sourcemesh=1, targetmesh=2)
+        #ms.save_current_mesh("input.ply", save_vertex_color=True)
         
-        strokeCounter = 0
-        pointCounter = 0
+        vertexPositions = ms.current_mesh().vertex_matrix()
         vertexColors = ms.current_mesh().vertex_color_matrix()
 
         for vertexColor in vertexColors:
@@ -94,8 +50,7 @@ def main():
 
         print("Finished frame " + str(counter+1))
         counter += 1
-
-    la.write("output.latk")
-    print("Wrote latk")
+    
+    os.system("ffmpeg -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -r 30 output.mp4")
 
 main()
