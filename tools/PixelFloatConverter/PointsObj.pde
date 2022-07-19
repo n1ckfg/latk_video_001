@@ -1,54 +1,35 @@
 class PointsObj {
 
-  ArrayList<PointsObjChild> obj;
- 
-  PointsObj(PShape _shape) {
-    obj = new ArrayList<PointsObjChild>();
+  ArrayList<PointData> points;
+  String[] lines;
+  
+  PointsObj(String url) {
+    lines = loadStrings(url);
+    points = new ArrayList<PointData>();
     
-    for (int i=0; i<_shape.getChildCount(); i++) {
-      obj.add(new PointsObjChild(_shape.getChild(i)));
+    for (int i=0; i<lines.length; i++) {
+      if (lines[i].startsWith("v ")) {
+        String[] words = lines[i].split(" ");
+        PVector pos = new PVector(float(words[1]), float(words[2]), float(words[3]));
+        color col = color(255);
+        if (words.length == 7) {
+          col = color(255 * float(words[4]), 255 * float(words[5]), 255 * float(words[6]));
+        }
+        PointData pd = new PointData(pos, col);
+        points.add(pd);
+      }
     }
   }
   
   void draw() {
-    for (int i=0; i<obj.size(); i++) {
-      obj.get(i).draw();
-    }
-  }
-  
-}
-
-class PointsObjChild {
-
-  ArrayList<PointData> points;
-
-  PointsObjChild(PShape _shape) {
-    points = new ArrayList<PointData>();
-    
-    for (int i=0; i<_shape.getVertexCount(); i++) {
-      color col = color(0);
-      try {
-        col = _shape.getStroke(0);
-      } catch (Exception e) {
-        try {
-          col = _shape.getFill(0);
-        } catch (Exception ee) { }
-      }
-      PointData p = new PointData(_shape.getVertex(i), col);
-      points.add(p);
-    }
-  }
-  
-  void draw() { 
     beginShape(POINTS);
-    for (int i=0; i<points.size(); i++) {
-      PVector p = points.get(i).pos;
-      stroke(255);
-      vertex(p.x, p.y, p.z);
+    for (PointData pd : points) {
+      stroke(pd.col);
+      vertex(pd.pos.x, pd.pos.y, pd.pos.z);
     }
     endShape();
   }
-   
+  
 }
 
 class PointData {
