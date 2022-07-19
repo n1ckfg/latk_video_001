@@ -4,6 +4,7 @@ PeasyCam cam;
 PointsObj po;
 
 FloatToPixel f2p;
+PixelToFloat p2f;
 int maxColor = 255 * 255 * 255;
 GameState gs;
 
@@ -15,6 +16,7 @@ void setup() {
   po = new PointsObj("test.obj");
   
   f2p = new FloatToPixel(po);
+  //p2f = new PixelToFloat(f2p);
 }
 
 void draw() {
@@ -38,16 +40,4 @@ void draw() {
   }
   
   surface.setTitle("" + frameRate);
-}
-
-color getColorFromInt(int val) {
-  int rMask = 255 << 16;
-  int gMask = 255 << 8;
-  int bMask = 255;
-  
-  int r = (val & rMask) >> 16;
-  int g = (val & gMask) >> 8;
-  int b = val & bMask;
-
-  return color(r, g, b);
 }
