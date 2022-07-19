@@ -1,8 +1,7 @@
 import peasy.PeasyCam;
 
 PeasyCam cam;
-PShape pod;
-PointsObj podObj;
+PointsObj po;
 
 FloatToPixel f2p;
 int maxColor = 255 * 255 * 255;
@@ -13,10 +12,9 @@ void setup() {
   gs = GameState.OBJ;
 
   cam = new PeasyCam(this, 400);
-  pod = loadShape("test.obj");
-  podObj = new PointsObj(pod);
+  po = new PointsObj("test.obj");
   
-  f2p = new FloatToPixel();
+  f2p = new FloatToPixel(po);
 }
 
 void draw() {
@@ -26,11 +24,10 @@ void draw() {
     case OBJ:
       lights();
       pushMatrix();
-      //translate(width/2, height/2, -500);
-      //scale(1000, 1000, 1000);
+      strokeWeight(0.02);
+      scale(100, 100, 100);
       rotateX(radians(180));
-      rotateY(radians(90));
-      shape(pod, 0, 0);
+      po.draw();
       popMatrix();
       break;
     case F2P:
