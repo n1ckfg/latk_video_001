@@ -35,9 +35,9 @@ class FloatToPixel {
     for (int i=0; i<len; i++) {
       PointData pd = po.points.get(i);
       pgRgb.pixels[i] = pd.col;
-      pgX.pixels[i] = int(100000 * pd.pos.x);
-      pgY.pixels[i] = int(100000 * pd.pos.y);
-      pgZ.pixels[i] = int(100000 * pd.pos.z);
+      pgX.pixels[i] = getColorFromInt(int(100000 * pd.pos.x));
+      pgY.pixels[i] = getColorFromInt(int(100000 * pd.pos.y));
+      pgZ.pixels[i] = getColorFromInt(int(100000 * pd.pos.z));
     }
     
     pgRgb.updatePixels();
@@ -52,5 +52,17 @@ class FloatToPixel {
     image(pgY, width/2, height/2); 
     image(pgZ, 0, height/2); 
   } 
+
+  color getColorFromInt(int val) {
+    int rMask = 255 << 16;
+    int gMask = 255 << 8;
+    int bMask = 255;
+    
+    int r = (val & rMask) >> 16;
+    int g = (val & gMask) >> 8;
+    int b = val & bMask;
   
+    return color(r, g, b);
+  }
+
 }
