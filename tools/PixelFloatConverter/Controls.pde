@@ -9,5 +9,8 @@ void keyPressed() {
     case('3'):
       gs = GameState.P2F;
       break;
+    case('s'):
+      saveFrame();
+      break;
   }
 }
