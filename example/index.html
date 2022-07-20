@@ -20,7 +20,8 @@
 			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 			// https://stackoverflow.com/questions/6893302/decode-rgb-value-to-single-float-without-bit-shift-in-glsl
 			// https://github.com/processing/processing4/blob/master/core/src/processing/core/PApplet.java#L9800
-			
+			// http://marcodiiga.github.io/encoding-normalized-floats-to-rgba8-vectors
+
 			vec4 encodeRange(float value, float minVal, float maxVal) {
 			    value = clamp((value - minVal) / (maxVal - minVal), 0.0, 1.0);
 			    value *= (256.0 * 256.0 * 256.0 - 1.0) / (256.0 * 256.0 * 256.0);
