@@ -19,14 +19,14 @@
 
 			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 
-			vec4 EncodeRange(float value, float minVal, float maxVal) {
+			vec4 encodeRange(float value, float minVal, float maxVal) {
 			    value = clamp((value - minVal) / (maxVal - minVal), 0.0, 1.0);
 			    value *= (256.0 * 256.0 * 256.0 - 1.0) / (256.0 * 256.0 * 256.0);
 			    vec4 encode = fract(value * vec4(1.0, 256.0, 256.0 * 256.0, 256.0 * 256.0 * 256.0));
 			    return vec4(encode.xyz - encode.yzw / 256.0, encode.w) + 1.0 / 512.0;
 			}
 
-			float DecodeRange(vec4 pack, float minVal, float maxVal) {
+			float decodeRange(vec4 pack, float minVal, float maxVal) {
 			    float value = dot(pack, 1.0 / vec4(1.0, 256.0, 256.0 * 256.0, 256.0 * 256.0 * 256.0));
 			    value *= (256.0 * 256.0 * 256.0) / (256.0 * 256.0 * 256.0 - 1.0);
 			    return mix(minVal, maxVal, value);
@@ -40,9 +40,9 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    float posX = DecodeRange(texture2D(tex, uvX), 0.0, 1.0);
-			    float posY = DecodeRange(texture2D(tex, uvY), 0.0, 1.0);
-			    float posZ = DecodeRange(texture2D(tex, uvZ), 0.0, 1.0);	    
+			    float posX = decodeRange(texture2D(tex, uvX), 0.0, 1.0);
+			    float posY = decodeRange(texture2D(tex, uvY), 0.0, 1.0);
+			    float posZ = decodeRange(texture2D(tex, uvZ), 0.0, 1.0);	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
