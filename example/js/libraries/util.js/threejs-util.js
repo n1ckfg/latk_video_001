@@ -60,5 +60,5 @@ window.addEventListener("resize", function(event) {
     camera.updateProjectionMatrix();
 
     renderer.setSize( width, height );
-    composer.setSize( width, height );
+    //composer.setSize( width, height );
 }, false);
