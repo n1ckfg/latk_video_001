@@ -20,7 +20,6 @@
 			// https://gamedev.stackexchange.com/questions/102889/is-it-possible-to-convert-vec4-to-int-in-glsl-using-opengl-es
 			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 
-			const highp float maxIntVal = 255 * 255 * 255;
 			const vec4 bitEnc = vec4(1.0, 255.0, 65025.0, 16581375.0);
 			const vec4 bitDec = 1.0 / bitEnc;
 
@@ -43,9 +42,9 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    float posX = DecodeFloatRGBA(texture2D(tex, uvX)) / maxIntVal;
-			    float posY = DecodeFloatRGBA(texture2D(tex, uvY)) / maxIntVal;
-			    float posZ = DecodeFloatRGBA(texture2D(tex, uvZ)) / maxIntVal;	    
+			    float posX = DecodeFloatRGBA(texture2D(tex, uvX));
+			    float posY = DecodeFloatRGBA(texture2D(tex, uvY));
+			    float posZ = DecodeFloatRGBA(texture2D(tex, uvZ));	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
