@@ -1,16 +1,22 @@
+import peasy.PeasyCam;
+
+PeasyCam cam;
+
 PImage img, imgRgb, imgX, imgY, imgZ;
 PShape ps;
 int dim = 1024;
 int hdim = dim/2;
-int len = hdim * hdim;
+int len = 65000;
 float maxIntVal = 255 * 255 * 255;
 float scaleVal = 200;
-float strokeWeightVal = 1/scaleVal;
+float strokeWeightVal = 1;
 
 void setup() {
-  size(1024, 768, P3D);
+  size(1024, 1024, P3D);
   
-  img = loadImage("output0.png");
+  cam = new PeasyCam(this, 400);
+
+  img = loadImage("screen-1196.tif");
   imgRgb = img.get(0, 0, hdim, hdim);
   imgRgb.loadPixels();
   imgX = img.get(hdim, 0, hdim, hdim);
@@ -21,9 +27,9 @@ void setup() {
   imgZ.loadPixels();
   
   ps = createShape();
-  ps.beginShape();
+  ps.beginShape(POINTS);
+  ps.strokeWeight(strokeWeightVal);
   for (int i=0; i<len; i++) {
-    ps.strokeWeight(strokeWeightVal);
     ps.stroke(imgRgb.pixels[i]);
     float x = float(imgX.pixels[i]) / maxIntVal;
     float y = float(imgY.pixels[i]) / maxIntVal;
@@ -37,7 +43,7 @@ void draw() {
   background(0);
   
   pushMatrix();
-  translate(-width/8, height/8, 0);
+  translate(width/8, -height/8, 0);
   scale(scaleVal, scaleVal, scaleVal);
   rotateX(radians(180));
   shape(ps, 0, 0);
