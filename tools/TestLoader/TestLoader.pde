@@ -6,7 +6,7 @@ PImage img, imgRgb, imgX, imgY, imgZ;
 PShape ps;
 int dim = 1024;
 int hdim = dim/2;
-int len = 65000;
+int len = hdim * hdim;
 float maxIntVal = 255 * 255 * 255;
 float scaleVal = 200;
 float strokeWeightVal = 1;
@@ -16,7 +16,7 @@ void setup() {
   
   cam = new PeasyCam(this, 400);
 
-  img = loadImage("screen-1196.tif");
+  img = loadImage("output0.png");
   imgRgb = img.get(0, 0, hdim, hdim);
   imgRgb.loadPixels();
   imgX = img.get(hdim, 0, hdim, hdim);
@@ -48,4 +48,6 @@ void draw() {
   rotateX(radians(180));
   shape(ps, 0, 0);
   popMatrix(); 
+
+  surface.setTitle("" + frameRate);
 }

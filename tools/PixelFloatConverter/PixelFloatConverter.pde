@@ -48,7 +48,7 @@ void draw() {
     case P2F:
       renderPointsObj(p2f.po);
       break;
-}
+  }
   
   surface.setTitle("" + frameRate);
 }
