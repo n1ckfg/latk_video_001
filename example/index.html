@@ -17,21 +17,19 @@
 			varying vec2 vUv;
 			uniform sampler2D tex;
 
-			// https://gamedev.stackexchange.com/questions/102889/is-it-possible-to-convert-vec4-to-int-in-glsl-using-opengl-es
 			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 
-			const vec4 bitEnc = vec4(1.0, 255.0, 65025.0, 16581375.0);
-			const vec4 bitDec = 1.0 / bitEnc;
-
-			vec4 EncodeFloatRGBA(float v) {
-			    vec4 enc = bitEnc * v;
-			    enc = fract(enc);
-			    enc -= enc.yzww * vec2(1.0/255.0, 0.0).xxxy;
-			    return enc;
+			vec4 EncodeRange(float value, float minVal, float maxVal) {
+			    value = clamp((value - minVal) / (maxVal - minVal), 0.0, 1.0);
+			    value *= (256.0 * 256.0 * 256.0 - 1.0) / (256.0 * 256.0 * 256.0);
+			    vec4 encode = fract(value * vec4(1.0, 256.0, 256.0 * 256.0, 256.0 * 256.0 * 256.0));
+			    return vec4(encode.xyz - encode.yzw / 256.0, encode.w) + 1.0 / 512.0;
 			}
 
-			float DecodeFloatRGBA(vec4 v) {
-			    return dot(v, bitDec);
+			float DecodeRange(vec4 pack, float minVal, float maxVal) {
+			    float value = dot(pack, 1.0 / vec4(1.0, 256.0, 256.0 * 256.0, 256.0 * 256.0 * 256.0));
+			    value *= (256.0 * 256.0 * 256.0) / (256.0 * 256.0 * 256.0 - 1.0);
+			    return mix(minVal, maxVal, value);
 			}
 
 			void main() {
@@ -42,9 +40,9 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    float posX = DecodeFloatRGBA(texture2D(tex, uvX));
-			    float posY = DecodeFloatRGBA(texture2D(tex, uvY));
-			    float posZ = DecodeFloatRGBA(texture2D(tex, uvZ));	    
+			    float posX = DecodeRange(texture2D(tex, uvX), 0.0, 1.0);
+			    float posY = DecodeRange(texture2D(tex, uvY), 0.0, 1.0);
+			    float posZ = DecodeRange(texture2D(tex, uvZ), 0.0, 1.0);	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
