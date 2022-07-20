@@ -40,12 +40,15 @@ void draw() {
       renderPointsObj(po);
       break;
     case F2P:
+      camera();
+      pushMatrix();
       f2p.draw();
+      popMatrix();
       break;
     case P2F:
       renderPointsObj(p2f.po);
       break;
-  }
+}
   
   surface.setTitle("" + frameRate);
 }
