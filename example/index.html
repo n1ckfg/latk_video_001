@@ -37,13 +37,17 @@
 
 			void main() {
 			    vUv = uv;
-			    vec2 uv2 = vec2(uv.x, uv.y * 0.5);
+			    vec2 uvX = vec2(0.5 + uv.x * 0.5, 0.5 + uv.y * 0.5);
+			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
+			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    vec4 col = texture2D(tex, uv2);
+			    vec4 colX = texture2D(tex, uvX);
+			    vec4 colY = texture2D(tex, uvY);
+			    vec4 colZ = texture2D(tex, uvZ);
 	    
 			    //vec3 newPosition = position + normal * displacement;
 
-			    float disp = getDepthSpherical(col.x);
+			    float disp = getDepthSpherical(colX.x);
 			    vec3 newPosition = normal * clamp(disp, -_Maximum, 0.0) * _Displacement;
 			    newPosition.y *= -1.0;
 
@@ -56,9 +60,9 @@
 			uniform sampler2D tex;
 
 			void main() {
-			    vec2 uv = vec2(vUv.x, 0.5 + vUv.y * 0.5);
+			    vec2 uvRgb = vec2(vUv.x * 0.5, 0.5 + vUv.y * 0.5);
 
-			    vec4 col = texture2D(tex, uv);
+			    vec4 col = texture2D(tex, uvRgb);
 			    gl_FragColor = col;
 			}
     	</script>
@@ -96,7 +100,7 @@
 				video.height = 360;
 				video.loop = true;
 				video.muted = true;
-				video.src = "./images/bicycle_360.mp4";
+				video.src = "./images/output.mp4";
 				video.setAttribute("webkit-playsinline", "webkit-playsinline");
 				video.play();
 
