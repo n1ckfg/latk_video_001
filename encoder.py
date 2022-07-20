@@ -11,8 +11,14 @@ def xyFromLoc(loc, width):
     y = (loc - x) / width
     return x, y
 
+def remapNp(value, min1, max1, min2, max2):
+    return np.interp(value, [min1, max1], [min2, max2])
+
 def remap(value, min1, max1, min2, max2):
-    return np.interp(value,[min1, max1],[min2, max2])
+    range1 = max1 - min1
+    range2 = max2 - min2
+    valueScaled = float(value - min1) / float(range1)
+    return min2 + (valueScaled * range2)
 
 def changeExtension(_url, _newExt, _append=None):
     returns = ""
@@ -99,6 +105,19 @@ def main():
         localDim = (minX, maxX, minY, maxY, minZ, maxZ)
         localDims.append(localDim)
 
+        if (minX < seqMinX):
+            seqMinX = minX
+        if (maxX > seqMaxX):
+            seqMaxX = maxX
+        if (minY < seqMinY):
+            seqMinY = minY
+        if (maxY > seqMaxY):
+            seqMaxY = maxY
+        if (minZ < seqMinZ):
+            seqMinZ = minZ
+        if (maxZ > seqMaxZ):
+            seqMaxZ = maxZ
+
         print("Resampled frame " + str(counter+1))
         counter += 1
     
@@ -110,8 +129,8 @@ def main():
         normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0, 1)
         normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0, 1)
 
-        normVals = (normMinX, normMaxX, normMinY, normMaxY, normMinZ, normMaxZ)
-        localNorms.append(normVals)
+        localNorm = (normMinX, normMaxX, normMinY, normMaxY, normMinZ, normMaxZ)
+        localNorms.append(localNorm)
 
     # 2. Second pass, to convert the resampled point clouds to images
     urls = []
@@ -136,11 +155,11 @@ def main():
         imgRgb = Image.new("RGB", (512, 512))
         imgRgbPixels = imgRgb.load()
 
-        for i, vertexColor in enumerate(vertexColors):
+        for j, vertexColor in enumerate(vertexColors):
             color = (int(vertexColor[0] * 255), int(vertexColor[1] * 255), int(vertexColor[2] * 255))
 
-            ix, iy = xyFromLoc(i, 512)
-            imgRgbPixels[ix, iy] = color
+            jx, jy = xyFromLoc(j, 512)
+            imgRgbPixels[jx, jy] = color
 
         vertexPositions = ms.current_mesh().vertex_matrix()
 
@@ -151,15 +170,15 @@ def main():
         imgZ = Image.new("RGB", (512, 512))
         imgZPixels = imgZ.load()
 
-        for vert in vertexPositions:
-            x = remap(vert[0], localDims[0], localDims[1], normVals[0], normVals[1])
-            y = remap(vert[1], localDims[2], localDims[3], normVals[2], normVals[3])
-            z = remap(vert[2], localDims[4], localDims[5], normVals[4], normVals[5])
+        for j, vert in enumerate(vertexPositions):
+            x = remap(vert[0], localDims[i][0], localDims[i][1], localNorms[i][0], localNorms[i][1])
+            y = remap(vert[1], localDims[i][2], localDims[i][3], localNorms[i][2], localNorms[i][3])
+            z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
-            ix, iy = xyFromLoc(i, 512)
-            imgXPixels[ix, iy] = int(maxIntVal * x)
-            imgYPixels[ix, iy] = int(maxIntVal * y)
-            imgZPixels[ix, iy] = int(maxIntVal * z)
+            jx, jy = xyFromLoc(i, 512)
+            imgXPixels[jx, jy] = int(maxIntVal * x)
+            imgYPixels[jx, jy] = int(maxIntVal * y)
+            imgZPixels[jx, jy] = int(maxIntVal * z)
 
         imgFinal = Image.new("RGB", (1024, 1024))
         imgFinal.paste(imgRgb, (0, 0))
