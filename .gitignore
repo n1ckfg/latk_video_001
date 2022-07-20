@@ -1,4 +1,5 @@
 *.pyc
 __pycache__/
 input/
+input2/
 output/

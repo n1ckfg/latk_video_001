@@ -11,10 +11,10 @@ def xyFromLoc(loc, width):
     y = (loc - x) / width
     return x, y
 
-def remapNp(value, min1, max1, min2, max2):
+def remap(value, min1, max1, min2, max2):
     return np.interp(value, [min1, max1], [min2, max2])
 
-def remap(value, min1, max1, min2, max2):
+def remap2(value, min1, max1, min2, max2):
     range1 = max1 - min1
     range2 = max2 - min2
     valueScaled = float(value - min1) / float(range1)
@@ -50,6 +50,9 @@ def main():
     localDims = []
     localNorms = []
 
+    dim = 1024
+    hdim = int(dim / 2)
+
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
     counter = 0
@@ -75,7 +78,7 @@ def main():
         ms.load_new_mesh(urls[i])
         mesh = ms.current_mesh()
 
-        newSampleNum = 256 * 256 #mesh.vertex_number()
+        newSampleNum = hdim * hdim #mesh.vertex_number()
         if (mesh.edge_number() == 0 and mesh.face_number() == 0):
             ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=True)
         else:
@@ -152,22 +155,22 @@ def main():
        
         vertexColors = ms.current_mesh().vertex_color_matrix()
 
-        imgRgb = Image.new("RGB", (512, 512))
+        imgRgb = Image.new("RGB", (hdim, hdim))
         imgRgbPixels = imgRgb.load()
 
         for j, vertexColor in enumerate(vertexColors):
             color = (int(vertexColor[0] * 255), int(vertexColor[1] * 255), int(vertexColor[2] * 255))
 
-            jx, jy = xyFromLoc(j, 512)
+            jx, jy = xyFromLoc(j, hdim)
             imgRgbPixels[jx, jy] = color
 
         vertexPositions = ms.current_mesh().vertex_matrix()
 
-        imgX = Image.new("RGB", (512, 512))
+        imgX = Image.new("RGB", (hdim, hdim))
         imgXPixels = imgX.load()
-        imgY = Image.new("RGB", (512, 512))
+        imgY = Image.new("RGB", (hdim, hdim))
         imgYPixels = imgY.load()
-        imgZ = Image.new("RGB", (512, 512))
+        imgZ = Image.new("RGB", (hdim, hdim))
         imgZPixels = imgZ.load()
 
         for j, vert in enumerate(vertexPositions):
@@ -175,16 +178,16 @@ def main():
             y = remap(vert[1], localDims[i][2], localDims[i][3], localNorms[i][2], localNorms[i][3])
             z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
-            jx, jy = xyFromLoc(i, 512)
+            jx, jy = xyFromLoc(j, hdim)
             imgXPixels[jx, jy] = int(maxIntVal * x)
             imgYPixels[jx, jy] = int(maxIntVal * y)
             imgZPixels[jx, jy] = int(maxIntVal * z)
 
-        imgFinal = Image.new("RGB", (1024, 1024))
+        imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
-        imgFinal.paste(imgX, (512, 0))
-        imgFinal.paste(imgY, (512, 512))
-        imgFinal.paste(imgZ, (0, 512))
+        imgFinal.paste(imgX, (hdim, 0))
+        imgFinal.paste(imgY, (hdim, hdim))
+        imgFinal.paste(imgZ, (0, hdim))
         imgFinal.convert("RGB").save(outputPath + "/output" + str(i) + ".png")
 
         print("Finished frame " + str(counter+1))
