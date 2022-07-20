@@ -104,7 +104,8 @@
 				video.setAttribute("webkit-playsinline", "webkit-playsinline");
 				video.play();
 
-				texture = new THREE.VideoTexture(video);
+				//texture = new THREE.VideoTexture(video);
+				texture = new THREE.TextureLoader().load("./images/output0.png");
 				//material = new THREE.MeshBasicMaterial({ map: texture });
 			    material = new THREE.ShaderMaterial({
 					uniforms: {
