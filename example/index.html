@@ -17,39 +17,37 @@
 			varying vec2 vUv;
 			uniform sampler2D tex;
 
-		    /*
-		    // defaults
-		    float _Displacement = 10.0;
-			float _Maximum = 99.0;
-			float _BaselineLength = 0.5;
-    		float _SphericalAngle = 10.0;
-    		*/
+			// https://gamedev.stackexchange.com/questions/102889/is-it-possible-to-convert-vec4-to-int-in-glsl-using-opengl-es
+			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 
-    		// testing
-		    float _Displacement = 20.0; 
-			float _Maximum = 30.0; 
-			float _BaselineLength = 180.0;
-    		float _SphericalAngle = 3.143; 
+			const highp float maxIntVal = 255 * 255 * 255;
+			const vec4 bitEnc = vec4(1.0, 255.0, 65025.0, 16581375.0);
+			const vec4 bitDec = 1.0 / bitEnc;
 
-	        float getDepthSpherical(float d) {
-	            return asin(_BaselineLength * sin(_SphericalAngle)) / asin(d);
-	        }
+			vec4 EncodeFloatRGBA(float v) {
+			    vec4 enc = bitEnc * v;
+			    enc = fract(enc);
+			    enc -= enc.yzww * vec2(1.0/255.0, 0.0).xxxy;
+			    return enc;
+			}
+
+			float DecodeFloatRGBA(vec4 v) {
+			    return dot(v, bitDec);
+			}
 
 			void main() {
+			    gl_PointSize = 2.0;
+			    
 			    vUv = uv;
 			    vec2 uvX = vec2(0.5 + uv.x * 0.5, 0.5 + uv.y * 0.5);
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    vec4 colX = texture2D(tex, uvX);
-			    vec4 colY = texture2D(tex, uvY);
-			    vec4 colZ = texture2D(tex, uvZ);
+			    float posX = DecodeFloatRGBA(texture2D(tex, uvX)) / maxIntVal;
+			    float posY = DecodeFloatRGBA(texture2D(tex, uvY)) / maxIntVal;
+			    float posZ = DecodeFloatRGBA(texture2D(tex, uvZ)) / maxIntVal;	    
 	    
-			    //vec3 newPosition = position + normal * displacement;
-
-			    float disp = getDepthSpherical(colX.x);
-			    vec3 newPosition = normal * clamp(disp, -_Maximum, 0.0) * _Displacement;
-			    newPosition.y *= -1.0;
+			    vec3 newPosition = vec3(posX, posY, posZ);
 
 			    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
 			}
@@ -89,15 +87,15 @@
 
 				scene = new THREE.Scene();
 
-				geometry = new THREE.SphereBufferGeometry(100, 256, 256);
+				geometry = new THREE.SphereBufferGeometry(200, 512, 512);
 				//geometry = new THREE.IcosahedronGeometry(100, 6);
 				// invert the geometry on the x-axis so that all of the faces point inward
 				geometry.scale(- 1, 1, 1);
 
 				video = document.createElement("video");
 				video.crossOrigin = "anonymous";
-				video.width = 640;
-				video.height = 360;
+				video.width = 1024;
+				video.height = 1024;
 				video.loop = true;
 				video.muted = true;
 				video.src = "./images/output.mp4";
@@ -117,7 +115,7 @@
 			        fragmentShader: document.getElementById("fragmentShader").textContent
 			    });
 
-				mesh = new THREE.Mesh(geometry, material);
+				mesh = new THREE.Points(geometry, material);
 
 				scene.add(mesh);
 
