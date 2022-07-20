@@ -193,6 +193,6 @@ def main():
         print("Finished frame " + str(counter+1))
         counter += 1
 
-    #os.system("ffmpeg -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -r 30 output.mp4")
+    os.system("ffmpeg -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -r 30 output/output.mp4")
 
 main()
