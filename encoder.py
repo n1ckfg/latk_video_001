@@ -32,6 +32,17 @@ def changeExtension(_url, _newExt, _append=None):
     print ("New url: " + returns)
     return returns
 
+def getColorFromInt(val):
+    rMask = 255 << 16
+    gMask = 255 << 8
+    bMask = 255
+    
+    r = (val & rMask) >> 16
+    g = (val & gMask) >> 8
+    b = val & bMask
+  
+    return (r, g, b)
+
 def main():
     argv = sys.argv
     argv = argv[argv.index("--") + 1:] # get all args after "--"
@@ -80,9 +91,9 @@ def main():
 
         newSampleNum = hdim * hdim #mesh.vertex_number()
         if (mesh.edge_number() == 0 and mesh.face_number() == 0):
-            ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=True)
+            ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=True) # exactnumflag=True 
         else:
-            ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=False)
+            ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=False) # exactnumflag=True
         ms.vertex_attribute_transfer(sourcemesh=0, targetmesh=1)
         ms.save_current_mesh(changeExtension(urls[i], ".ply", "_resampled"), save_vertex_color=True)
         
@@ -179,9 +190,9 @@ def main():
             z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
             jx, jy = xyFromLoc(j, hdim)
-            imgXPixels[jx, jy] = int(maxIntVal * x)
-            imgYPixels[jx, jy] = int(maxIntVal * y)
-            imgZPixels[jx, jy] = int(maxIntVal * z)
+            imgXPixels[jx, jy] = getColorFromInt(int(maxIntVal * x))
+            imgYPixels[jx, jy] = getColorFromInt(int(maxIntVal * y))
+            imgZPixels[jx, jy] = getColorFromInt(int(maxIntVal * z))
 
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
