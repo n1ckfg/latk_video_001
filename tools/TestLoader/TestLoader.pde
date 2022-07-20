@@ -51,3 +51,7 @@ void draw() {
 
   surface.setTitle("" + frameRate);
 }
+
+void keyPressed() {
+  saveFrame();
+}
