@@ -32,16 +32,29 @@ def changeExtension(_url, _newExt, _append=None):
     print ("New url: " + returns)
     return returns
 
-def getColorFromInt(val):
+def packIntToColor(val):
+    val_i = int(16777216.0 * val)
+
     rMask = 255 << 16
     gMask = 255 << 8
     bMask = 255
     
-    r = (val & rMask) >> 16
-    g = (val & gMask) >> 8
-    b = val & bMask
+    r = (val_i & rMask) >> 16
+    g = (val_i & gMask) >> 8
+    b = val_i & bMask
   
     return (r, g, b)
+
+# https://blender.stackexchange.com/questions/241001/packing-float32-to-vertex-color
+def fract(x):
+    return x - np.floor(x)
+
+def packFloatToColor(val):
+    enc = np.float32((1.0, 256.0, 65536.0, 16777216.0)) * val
+    enc = fract(enc)
+    enc -= (enc[1], enc[2], enc[3], enc[3]) * np.float32((1.0/256.0, 1.0/256.0, 1.0/256.0, 0.0))
+    enc_i = (int(enc[0] * 255.0), int(enc[1] * 255.0), int(enc[2] * 255.0), int(enc[3] * 255.0))
+    return enc_i
 
 def main():
     argv = sys.argv
@@ -50,8 +63,6 @@ def main():
     inputPath = argv[0] 
     outputPath = argv[1] 
    
-    maxIntVal = 255 * 255 * 255
-
     seqMinX = 0
     seqMaxX = 0
     seqMinY = 0
@@ -170,7 +181,7 @@ def main():
         imgRgbPixels = imgRgb.load()
 
         for j, vertexColor in enumerate(vertexColors):
-            color = (int(vertexColor[0] * 255), int(vertexColor[1] * 255), int(vertexColor[2] * 255))
+            color = (int(vertexColor[0] * 255.0), int(vertexColor[1] * 255.0), int(vertexColor[2] * 255.0))
 
             jx, jy = xyFromLoc(j, hdim)
             imgRgbPixels[jx, jy] = color
@@ -190,9 +201,9 @@ def main():
             z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
             jx, jy = xyFromLoc(j, hdim)
-            imgXPixels[jx, jy] = getColorFromInt(int(maxIntVal * x))
-            imgYPixels[jx, jy] = getColorFromInt(int(maxIntVal * y))
-            imgZPixels[jx, jy] = getColorFromInt(int(maxIntVal * z))
+            imgXPixels[jx, jy] = packFloatToColor(x)
+            imgYPixels[jx, jy] = packFloatToColor(y)
+            imgZPixels[jx, jy] = packFloatToColor(z)
 
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
