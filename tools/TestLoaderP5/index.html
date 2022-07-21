@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>...</title>
+		<style>
+			body {
+				background: gray;
+			}
+		</style>
+		<script src="./js/libraries/p5.min.js"></script>
+	</head>
+
+	<body>
+		<script>
+			"use strict";
+
+			let img, imgRgb, imgX, imgY, imgZ;
+			const dim = 1024;
+			const hdim = dim/2;
+			const len = hdim * hdim;
+			const maxIntVal = 255.0 * 255.0 * 255.0;
+			const scaleVal = 100.0;
+			const strokeWeightVal = 1;
+
+			function preload() {
+				img = loadImage("./images/output0.png");
+			}
+
+			function setup() {
+				createCanvas(800, 800, WEBGL);
+
+				imgRgb = img.get(0, 0, hdim, hdim);
+				imgRgb.loadPixels();
+				imgX = img.get(hdim, 0, hdim, hdim);
+				imgX.loadPixels();
+				imgY = img.get(hdim, hdim, hdim, hdim);
+				imgY.loadPixels();
+				imgZ = img.get(0, hdim, hdim, hdim);
+				imgZ.loadPixels();
+
+				strokeWeight(strokeWeightVal);
+
+				background(0);
+
+				push();
+				translate(-width/6.5, -height/6.5, 0);
+				scale(scaleVal, scaleVal, scaleVal);
+
+				for (let i=0; i<len*4; i+=4) {
+					stroke(color(imgRgb.pixels[i], imgRgb.pixels[i+1], imgRgb.pixels[i+2], imgRgb.pixels[i+3]));
+					let x = colorToInt(imgX.pixels[i]);
+					let y = colorToInt(imgY.pixels[i]);
+					let z = colorToInt(imgZ.pixels[i]);
+					point(x, y, z);
+				}
+
+				pop(); 
+			}
+
+			function draw() {
+				//
+			}
+
+			function colorToInt(col) {
+				const v1 = red(col);
+				const v2 = green(col);
+				const v3 = blue(col);
+
+			    let returns = (v3 << 16) | (v2 << 8) | v1;
+			    return float(returns) / maxIntVal;
+			}
+		</script>
+	</body>
+
+</html>
+
