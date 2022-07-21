@@ -201,9 +201,9 @@ def main():
             z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
             jx, jy = xyFromLoc(j, hdim)
-            imgXPixels[jx, jy] = packFloatToColor(x)
-            imgYPixels[jx, jy] = packFloatToColor(y)
-            imgZPixels[jx, jy] = packFloatToColor(z)
+            imgXPixels[jx, jy] = packIntToColor(x)
+            imgYPixels[jx, jy] = packIntToColor(y)
+            imgZPixels[jx, jy] = packIntToColor(z)
 
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
