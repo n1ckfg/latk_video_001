@@ -23,10 +23,8 @@
 			// https://github.com/processing/processing4/blob/master/core/src/processing/core/PApplet.java#L9800
 			// http://marcodiiga.github.io/encoding-normalized-floats-to-rgba8-vectors
 
-			float unpackColor(vec3 color) {
-				//vec3 bitSh = vec3(1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0);
-				vec3 bitSh = vec3(1.0, 1.0 / 256.0, 1.0 / (256.0 * 256.0));
-				
+			float unpackColor(vec4 color) {
+				vec4 bitSh = vec4(1.0, 1.0 / 256.0, 1.0 / (256.0 * 256.0), 1.0 / (256.0 * 256.0 * 256.0));
 				return dot(color, bitSh);
   			}
 
@@ -39,9 +37,9 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    float posX = unpackColor(texture2D(tex, uvX).xyz) * scaler;
-			    float posY = unpackColor(texture2D(tex, uvY).xyz) * scaler;
-			    float posZ = unpackColor(texture2D(tex, uvZ).xyz) * scaler;	    
+			    float posX = unpackColor(texture2D(tex, uvX)) * scaler;
+			    float posY = unpackColor(texture2D(tex, uvY)) * scaler;
+			    float posZ = unpackColor(texture2D(tex, uvZ)) * scaler;	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
