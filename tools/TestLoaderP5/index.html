@@ -20,8 +20,8 @@
 			const hdim = dim/2;
 			const len = hdim * hdim;
 			const maxIntVal = 255.0 * 255.0 * 255.0;
-			const scaleVal = 100.0;
-			const strokeWeightVal = 1;
+			const scaleVal = 600.0;
+			const strokeWeightVal = 0.45;
 
 			function preload() {
 				img = loadImage("./images/output0.png");
@@ -44,11 +44,12 @@
 				background(0);
 
 				push();
-				translate(-width/6.5, -height/6.5, 0);
+				translate(-width/3.0, height/3.0, 0);
 				scale(scaleVal, scaleVal, scaleVal);
+  				rotateX(radians(180));
 
 				for (let i=0; i<len*4; i+=4) {
-					stroke(color(imgRgb.pixels[i], imgRgb.pixels[i+1], imgRgb.pixels[i+2], imgRgb.pixels[i+3]));
+					stroke(color(imgRgb.pixels[i], imgRgb.pixels[i+1], imgRgb.pixels[i+2]));
 					let x = colorToInt(imgX.pixels[i]);
 					let y = colorToInt(imgY.pixels[i]);
 					let z = colorToInt(imgZ.pixels[i]);
