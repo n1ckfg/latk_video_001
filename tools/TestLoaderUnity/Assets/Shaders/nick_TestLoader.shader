@@ -22,8 +22,8 @@ Shader "Nick/TestLoader" {
 			float2 uv_MainTex; //(1.0, 1.0) U, V
         };
 
-		float unpackColor(float4 color) {
-			float4 bitSh = float4(1.0, 1.0 / 256.0, 1.0 / 65536.0, 1.0 / 16777216.0);
+		float unpackColor(float3 color) {
+			float3 bitSh = float3(1.0, 1.0 / 256.0, 1.0 / 65536.0); // , 1.0 / 16777216.0);
 			return dot(color, bitSh);
 		}
 
@@ -32,15 +32,11 @@ Shader "Nick/TestLoader" {
 			float2 uvY = float2(0.5 + v.texcoord.x * 0.5, v.texcoord.y);
 			float2 uvZ = float2(v.texcoord.x * 0.5, v.texcoord.y);
 
-			float3 dcolorX = tex2Dlod(_MainTex, float4(uvX, 0, 0));
-			float3 dcolorY = tex2Dlod(_MainTex, float4(uvY, 0, 0));
-			float3 dcolorZ = tex2Dlod(_MainTex, float4(uvZ, 0, 0));
+			float posX = unpackColor(tex2Dlod(_MainTex, float4(uvX, 0, 0)));
+			float posY = unpackColor(tex2Dlod(_MainTex, float4(uvY, 0, 0)));
+			float posZ = unpackColor(tex2Dlod(_MainTex, float4(uvZ, 0, 0)));
 
-			float posX = unpackColor(float4(dcolorX, 1));
-			float posY = unpackColor(float4(dcolorY, 1));
-			float posZ = unpackColor(float4(dcolorZ, 1));
-
-			v.vertex.xyz = float3(posX, posY, posZ) * _Scaler;
+			v.vertex.xyz = float3(posX, posZ, posY) * _Scaler;
 		}
 	
 		void surf(Input IN, inout SurfaceOutput o) {
