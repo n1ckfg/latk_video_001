@@ -83,23 +83,27 @@
 
 				scene = new THREE.Scene();
 
-				geometry = new THREE.SphereBufferGeometry(100, 512, 512);
-				//geometry = new THREE.IcosahedronGeometry(100, 6);
-				// invert the geometry on the x-axis so that all of the faces point inward
-				geometry.scale(- 1, 1, 1);
+				const dim = 1024;
+				geometry = new THREE.SphereBufferGeometry(1, dim, dim);
 
 				video = document.createElement("video");
 				video.crossOrigin = "anonymous";
-				video.width = 1024;
-				video.height = 1024;
+				//video.width = 1024;
+				//video.height = 1024;
 				video.loop = true;
 				video.muted = true;
 				video.src = "./images/output.mp4";
 				video.setAttribute("webkit-playsinline", "webkit-playsinline");
 				video.play();
 
-				//texture = new THREE.VideoTexture(video);
-				texture = new THREE.TextureLoader().load("./images/output0.png");
+				texture = new THREE.VideoTexture(video);
+				//texture = new THREE.TextureLoader().load("./images/output0.png");
+        		
+        		texture.format = THREE.RGBAFormat;
+        		texture.minFilter = THREE.NearestFilter;
+        		texture.magFilter = THREE.LinearFilter;
+        		texture.generateMipmaps = false;
+
 				//material = new THREE.MeshBasicMaterial({ map: texture });
 			    material = new THREE.ShaderMaterial({
 					uniforms: {
