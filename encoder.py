@@ -5,6 +5,57 @@ import pymeshlab as ml
 import numpy as np
 import PIL.ImageDraw as ImageDraw
 import PIL.Image as Image
+import math
+
+def depthToRgb(depth):
+  r = 0
+  g = 0
+  b = 0
+
+  v = depth / 2047.0
+  v = float(math.pow(v, 3) * 6.0);
+  v = v * 6.0 * 256.0;
+
+  pval = int(math.round(v));
+  lb = pval & 0xff;
+  
+	if (pval >> 8 == 0):
+	    b = 255
+	    g = 255-lb
+	    r = 255-lb
+	elif (pval >> 8 == 1):
+	    b = 255
+	    g = lb
+	    r = 0
+	elif (pval >> 8 == 2):
+	    b = 255-lb
+	    g = 255
+	    r = 0
+	elif (pval >> 8 == 3):
+	    b = 0
+	    g = 255
+	    r = lb
+	elif (pval >> 8 == 4):
+	    b = 0
+	    g = 255-lb
+	    r = 255
+	elif (pval >> 8 == 5):
+	    b = 0
+	    g = 0
+	    r = 255-lb
+	else:
+	    r = 0
+	    g = 0
+	    b = 0
+
+    pixel = (0xFF) << 24 | (b & 0xFF) << 16 | (g & 0xFF) << 8 | (r & 0xFF) << 0
+    return pixel
+
+def depth2intensity(depth):
+  maxDepth = 8000.0; #2047;
+  d = math.round((1 - (depth / maxDepth)) * 255.0);
+  pixel = (0xFF) << 24 | (d & 0xFF) << 16 | (d & 0xFF) << 8 | (d & 0xFF) << 0;
+  return pixel
 
 def xyFromLoc(loc, width):
     x = loc % width
@@ -59,6 +110,32 @@ def packFloatToColor(val):
     enc -= (enc[1], enc[2], enc[3], enc[3]) * np.float32((1.0/256.0, 1.0/256.0, 1.0/256.0, 0.0))
     enc_i = (int(enc[0] * 255.0), int(enc[1] * 255.0), int(enc[2] * 255.0), int(enc[3] * 255.0))
     return enc_i
+
+# https://www.w3resource.com/python-exercises/math/python-math-exercise-77.php
+def rgbToHsv(val):
+    r, g, b = val[0]/255.0, val[1]/255.0, val[2]/255.0
+    mx = max(r, g, b)
+    mn = min(r, g, b)
+    df = mx-mn
+    if mx == mn:
+        h = 0
+    elif mx == r:
+        h = (60 * ((g-b)/df) + 360) % 360
+    elif mx == g:
+        h = (60 * ((b-r)/df) + 120) % 360
+    elif mx == b:
+        h = (60 * ((r-g)/df) + 240) % 360
+    if mx == 0:
+        s = 0
+    else:
+        s = (df/mx)*100
+    v = mx*100
+    return (int(h), int(s), int(v))
+
+def packIntToHsv(val):
+    rgb = packIntToColor(val)
+    return rgbToHsv(rgb)
+
 
 def main():
     argv = sys.argv
@@ -205,9 +282,9 @@ def main():
             z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
             jx, jy = xyFromLoc(j, hdim)
-            imgXPixels[jx, jy] = packIntToGray(x)
-            imgYPixels[jx, jy] = packIntToGray(y)
-            imgZPixels[jx, jy] = packIntToGray(z)
+            imgXPixels[jx, jy] = packIntToHsv(x)
+            imgYPixels[jx, jy] = packIntToHsv(y)
+            imgZPixels[jx, jy] = packIntToHsv(z)
 
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
