@@ -7,55 +7,51 @@ import PIL.ImageDraw as ImageDraw
 import PIL.Image as Image
 import math
 
-def depthToRgb(depth):
-  r = 0
-  g = 0
-  b = 0
+def kinectDepthToRgb(depth):
+    r = 0
+    g = 0
+    b = 0
 
-  v = depth / 2047.0
-  v = float(math.pow(v, 3) * 6.0);
-  v = v * 6.0 * 256.0;
+    #v = depth / 2047.0 # we assume this is already normalized here
+    #v = float(math.pow(v, 3) * 6.0)
+    v = float(pow(depth, 3) * 6.0)
+    v = v * 6.0 * 256.0
 
-  pval = int(math.round(v));
-  lb = pval & 0xff;
+    pval = int(round(v))
+    lb = pval & 0xff
   
-	if (pval >> 8 == 0):
-	    b = 255
-	    g = 255-lb
-	    r = 255-lb
-	elif (pval >> 8 == 1):
-	    b = 255
-	    g = lb
-	    r = 0
-	elif (pval >> 8 == 2):
-	    b = 255-lb
-	    g = 255
-	    r = 0
-	elif (pval >> 8 == 3):
-	    b = 0
-	    g = 255
-	    r = lb
-	elif (pval >> 8 == 4):
-	    b = 0
-	    g = 255-lb
-	    r = 255
-	elif (pval >> 8 == 5):
-	    b = 0
-	    g = 0
-	    r = 255-lb
-	else:
-	    r = 0
-	    g = 0
-	    b = 0
+    if (pval >> 8 == 0):
+        b = 255
+        g = 255-lb
+        r = 255-lb
+    elif (pval >> 8 == 1):
+        b = 255
+        g = lb
+        r = 0
+    elif (pval >> 8 == 2):
+        b = 255-lb
+        g = 255
+        r = 0
+    elif (pval >> 8 == 3):
+        b = 0
+        g = 255
+        r = lb
+    elif (pval >> 8 == 4):
+        b = 0
+        g = 255-lb
+        r = 255
+    elif (pval >> 8 == 5):
+        b = 0
+        g = 0
+        r = 255-lb
+    else:
+        r = 0
+        g = 0
+        b = 0
 
-    pixel = (0xFF) << 24 | (b & 0xFF) << 16 | (g & 0xFF) << 8 | (r & 0xFF) << 0
+    pixel = (r, g, b)#(0xFF) << 24 | (b & 0xFF) << 16 | (g & 0xFF) << 8 | (r & 0xFF) << 0
+    #print(pixel)
     return pixel
-
-def depth2intensity(depth):
-  maxDepth = 8000.0; #2047;
-  d = math.round((1 - (depth / maxDepth)) * 255.0);
-  pixel = (0xFF) << 24 | (d & 0xFF) << 16 | (d & 0xFF) << 8 | (d & 0xFF) << 0;
-  return pixel
 
 def xyFromLoc(loc, width):
     x = loc % width
@@ -133,7 +129,7 @@ def rgbToHsv(val):
     return (int(h), int(s), int(v))
 
 def packIntToHsv(val):
-    rgb = packIntToColor(val)
+    rgb = kinectDepthToRgb(val) #packIntToColor(val)
     return rgbToHsv(rgb)
 
 
