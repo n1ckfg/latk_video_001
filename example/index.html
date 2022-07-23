@@ -22,11 +22,29 @@
 			// https://github.com/processing/processing4/blob/master/core/src/processing/core/PApplet.java#L9800
 			// http://marcodiiga.github.io/encoding-normalized-floats-to-rgba8-vectors
 
+			const float _DepthSaturationThreshhold = 0.5; //a given pixel whose saturation is less than half will be culled (old default was .5)
+			const float _DepthBrightnessThreshold = 0.5; //a given pixel whose brightness is less than half will be culled (old default was .9)
+			const float _Epsilon = 0.03;
+
+			vec3 rgb2hsv(vec3 c) {
+			    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+			    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+			    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+			    float d = q.x - min(q.w, q.y);
+			    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + _Epsilon)), d / (q.x + _Epsilon), q.x);
+			}
+
+			float depthForPoint(vec2 texturePoint) {
+			    vec4 depthsample = texture2D(tex, texturePoint);
+			    vec3 depthsamplehsv = rgb2hsv(depthsample.rgb);
+			    return depthsamplehsv.g > _DepthSaturationThreshhold && depthsamplehsv.b > _DepthBrightnessThreshold ? depthsamplehsv.r : 0.0;
+			}
+
 			float unpackColor(vec4 color) {
 				vec4 bitSh = vec4(1.0, 1.0 / 256.0, 1.0 / 65536.0, 1.0 / 16777216.0);
 				return dot(color, bitSh);
   			}
-
 
 			void main() {
 			    gl_PointSize = 2.0;
@@ -36,13 +54,9 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    vec4 colX = texture2D(tex, uvX);
-			    vec4 colY = texture2D(tex, uvY);
-			    vec4 colZ = texture2D(tex, uvZ);
-
-			    float posX = (colX.x + colX.y + colX.z) / 3.0;
-			    float posY = (colY.x + colY.y + colY.z) / 3.0;
-			    float posZ = (colZ.x + colZ.y + colZ.z) / 3.0;	    
+			    float posX = depthForPoint(uvX);
+			    float posY = depthForPoint(uvY);
+			    float posZ = depthForPoint(uvZ);	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
