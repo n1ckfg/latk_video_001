@@ -45,6 +45,10 @@ def packIntToColor(val):
   
     return (r, g, b)
 
+def packIntToGray(val): 
+    gray = int(val * 255.0)
+    return (gray, gray, gray)
+
 # https://blender.stackexchange.com/questions/241001/packing-float32-to-vertex-color
 def fract(x):
     return x - np.floor(x)
@@ -201,9 +205,9 @@ def main():
             z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
             jx, jy = xyFromLoc(j, hdim)
-            imgXPixels[jx, jy] = packIntToColor(x)
-            imgYPixels[jx, jy] = packIntToColor(y)
-            imgZPixels[jx, jy] = packIntToColor(z)
+            imgXPixels[jx, jy] = packIntToGray(x)
+            imgYPixels[jx, jy] = packIntToGray(y)
+            imgZPixels[jx, jy] = packIntToGray(z)
 
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
@@ -218,6 +222,6 @@ def main():
     # https://trac.ffmpeg.org/wiki/Encode/H.264
     # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuvj444p -crf 0 -preset slow -r 30 output.mp4
     # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 0 -preset slow -r 30 output.mp4
-    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuvj444p -preset slow -crf 0 -r 30 output/output.mp4")
+    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 0 -r 30 output/output.mp4")
 
 main()

@@ -16,7 +16,6 @@
     	<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec2 vUv;
 			uniform sampler2D tex;
-			const float scaler = 1.0;
 
 			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 			// https://stackoverflow.com/questions/6893302/decode-rgb-value-to-single-float-without-bit-shift-in-glsl
@@ -37,9 +36,13 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    float posX = unpackColor(texture2D(tex, uvX)) * scaler;
-			    float posY = unpackColor(texture2D(tex, uvY)) * scaler;
-			    float posZ = unpackColor(texture2D(tex, uvZ)) * scaler;	    
+			    vec4 colX = texture2D(tex, uvX);
+			    vec4 colY = texture2D(tex, uvY);
+			    vec4 colZ = texture2D(tex, uvZ);
+
+			    float posX = (colX.x + colX.y + colX.z) / 3.0;
+			    float posY = (colY.x + colY.y + colY.z) / 3.0;
+			    float posZ = (colZ.x + colZ.y + colZ.z) / 3.0;	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
@@ -51,10 +54,20 @@
 			varying vec2 vUv;
 			uniform sampler2D tex;
 
+			// https://github.com/CesiumGS/cesium/blob/main/Source/Shaders/Builtin/Functions/saturation.glsl
+		    // Algorithm from Chapter 16 of OpenGL Shading Language
+			vec3 saturation(vec3 rgb, float adjustment) {
+			    const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+			    vec3 intensity = vec3(dot(rgb, W));
+			    return mix(intensity, rgb, adjustment);
+			}
+
 			void main() {
 			    vec2 uvRgb = vec2(vUv.x * 0.5, 0.5 + vUv.y * 0.5);
 			    vec4 col = texture2D(tex, uvRgb);
-			    gl_FragColor = col;
+			    col.x *= 0.92;
+			    col.y *= 0.99;
+			    gl_FragColor = vec4(saturation(col.xyz, 10.0), 1.0);
 			}
     	</script>
 	</head>
