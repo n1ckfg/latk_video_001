@@ -34,7 +34,7 @@ def changeExtension(_url, _newExt, _append=None):
     return returns
 
 # https://stackoverflow.com/questions/22236956/rgb-to-hsv-via-pil-and-colorsys
-def HSVColor(img):
+def PilHsvColor(img):
     if isinstance(img,Image.Image):
         r,g,b = img.split()
         Hdat = []
@@ -52,14 +52,18 @@ def HSVColor(img):
     else:
         return None
 
-def depthToHsv(val):
-    return (0, 0, val)
+def hsvToRgb(hue): # float
+    h = hue * 6.0 - 2.0
+    r = abs(h - 1.0) - 1.0
+    g = 2.0 - abs(h)
+    b = 2.0 - abs(h - 2.0)
+    return (r, g, b)
 
 def colorFloatToColorInt(rgb):
     return (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
 
-def encodeDepthToColorInt(depth):
-    return colorFloatToColorInt(depthToHsv(depth))
+def finalEncodeDepthToColorInt(depth):
+    return colorFloatToColorInt(hsvToRgb(depth))
 
 def main():
     argv = sys.argv
@@ -206,20 +210,20 @@ def main():
             z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
             jx, jy = xyFromLoc(j, hdim)
-            imgXPixels[jx, jy] = encodeDepthToColorInt(x)
-            imgYPixels[jx, jy] = encodeDepthToColorInt(y)
-            imgZPixels[jx, jy] = encodeDepthToColorInt(z)
+            imgXPixels[jx, jy] = finalEncodeDepthToColorInt(x)
+            imgYPixels[jx, jy] = finalEncodeDepthToColorInt(y)
+            imgZPixels[jx, jy] = finalEncodeDepthToColorInt(z)
 
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
 
-        imgX = HSVColor(imgX)
+        imgX = PilHsvColor(imgX)
         imgFinal.paste(imgX, (hdim, 0))
 
-        imgY = HSVColor(imgY)
+        imgY = PilHsvColor(imgY)
         imgFinal.paste(imgY, (hdim, hdim))
         
-        imgZ = HSVColor(imgZ)
+        imgZ = PilHsvColor(imgZ)
         imgFinal.paste(imgZ, (0, hdim))
         
         imgFinal.save(outputPath + "/output" + str(i) + ".png")

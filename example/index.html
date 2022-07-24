@@ -16,28 +16,59 @@
     	<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec2 vUv;
 			uniform sampler2D tex;	
-			const float maxVal = 256.0 * 256.0;
+			//const float maxVal = 256.0 * 256.0;
 
 			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 			// https://stackoverflow.com/questions/6893302/decode-rgb-value-to-single-float-without-bit-shift-in-glsl
 			// https://github.com/processing/processing4/blob/master/core/src/processing/core/PApplet.java#L9800
 			// http://marcodiiga.github.io/encoding-normalized-floats-to-rgba8-vectors
 			// https://vrdust.org.uk/wp-content/plugins/vcdustbackground/includes/dust_shaders.js
+			// https://github.com/simeonradivoev/kinect-hue-depth-encoding
+			// https://github.com/andybiar/Z-Depth-Image-Converter/
 
-			const float  _Epsilon = 0.03;
+            float rand(float n) {
+                return fract(sin(n * 12.9898) * 43758.5453);
+            }
 
-			// https://stackoverflow.com/questions/55930123/converting-yuv-ycbcr420p-to-rgb-in-glsl-fragment-shader
-			vec3 rgb2hsv(vec3 col) {
-				float y = col.r;
-				float u = col.r - 0.5;
-				float v = col.r - 0.5;
-				
-				float r = y + 1.402 * v;
-				float g = y - 0.344 * u - 0.714 * v;
-				float b = y + 1.772 * u;
-				
-				return vec3(r, g, b);
-			}
+            vec3 rgb2hsv(vec3 c) {
+                vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+                vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+                vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+                float d = q.x - min(q.w, q.y);
+                float e = 1.0e-10;
+                return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+            }
+
+            float RGB2Hue(vec3 c) {
+                float minc = min(min(c.r, c.g), c.b);
+                float maxc = max(max(c.r, c.g), c.b);
+                float div = 1.0 / (6.0 * max(maxc - minc, 1.0e-5));
+                float r = (c.g - c.b) * div;
+                float g = 1.0 / 3.0 + (c.b - c.r) * div;
+                float b = 2.0 / 3.0 + (c.r - c.g) * div;
+                float d = mix(r, mix(g, b, c.g < c.b), c.r < max(c.g, c.b));
+                return fract(d + 1.0);
+            }
+
+            float decode(vec3 data) {
+                /*
+                float dNormal = RGB2Hue(data) * 1529.0;
+
+                float dMin = _CutOff.x;
+                float dMax = _CutOff.y;
+
+                return dMin + ((dMax - dMin) * dNormal) / 1529.0;
+                */
+                return RGB2Hue(data);
+            }
+
+            /*
+            vec3 LinearToGammaSpaceAccurate(vec3 linRGB) {
+                // Exact version, useful for debugging.
+                return vec3(LinearToGammaSpaceExact(linRGB.r), LinearToGammaSpaceExact(linRGB.g), LinearToGammaSpaceExact(linRGB.b));
+            }
+            */
        
 			void main() {
 			    gl_PointSize = 2.0;
@@ -51,9 +82,9 @@
 			    vec3 colY = texture2D(tex, uvY).rgb;
 			    vec3 colZ = texture2D(tex, uvZ).rgb;
 
-			    float posX = rgb2hsv(colX).y;
-			    float posY = rgb2hsv(colY).y;
-			    float posZ = rgb2hsv(colZ).y;	    
+			    float posX = decode(colX);
+			    float posY = decode(colY);
+			    float posZ = decode(colZ);	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
