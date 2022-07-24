@@ -57,6 +57,17 @@ Shader "Nick/LatkVideo" {
 				return dot(color, bitSh);
 			}
 
+			float rgbToHue(float3 c) {
+				float minc = min(min(c.r, c.g), c.b);
+				float maxc = max(max(c.r, c.g), c.b);
+				float div = 1 / (6 * max(maxc - minc, 1e-5));
+				float r = (c.g - c.b) * div;
+				float g = 1.0 / 3 + (c.b - c.r) * div;
+				float b = 2.0 / 3 + (c.r - c.g) * div;
+				float d = lerp(r, lerp(g, b, c.g < c.b), c.r < max(c.g, c.b));
+				return frac(d + 1);
+			}
+
 			// Vertex Shader ------------------------------------------------
 			GS_INPUT VS_Main(appdata_full v) {
 				GS_INPUT output = (GS_INPUT)0;
@@ -66,9 +77,9 @@ Shader "Nick/LatkVideo" {
 				float2 uvY = float2(0.5 + v.texcoord.x * 0.5, v.texcoord.y);
 				float2 uvZ = float2(v.texcoord.x * 0.5, v.texcoord.y);
 
-				float posX = unpackColor(tex2Dlod(_MainTex, float4(uvX, 0, 0)));
-				float posY = unpackColor(tex2Dlod(_MainTex, float4(uvY, 0, 0)));
-				float posZ = unpackColor(tex2Dlod(_MainTex, float4(uvZ, 0, 0)));
+				float posX = rgbToHue(tex2Dlod(_MainTex, float4(uvX, 0, 0))	);
+				float posY = rgbToHue(tex2Dlod(_MainTex, float4(uvY, 0, 0)));
+				float posZ = rgbToHue(tex2Dlod(_MainTex, float4(uvZ, 0, 0)));
 
 				v.vertex.xyz = float3(posX, posZ, posY) * _Scaler;
 
