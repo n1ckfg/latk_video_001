@@ -16,9 +16,8 @@
     	<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec2 vUv;
 			uniform sampler2D tex;	
-			//const float maxVal = 256.0 * 256.0;
 
-			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
+ 			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 			// https://stackoverflow.com/questions/6893302/decode-rgb-value-to-single-float-without-bit-shift-in-glsl
 			// https://github.com/processing/processing4/blob/master/core/src/processing/core/PApplet.java#L9800
 			// http://marcodiiga.github.io/encoding-normalized-floats-to-rgba8-vectors
@@ -26,11 +25,21 @@
 			// https://github.com/simeonradivoev/kinect-hue-depth-encoding
 			// https://github.com/andybiar/Z-Depth-Image-Converter/
 
-            float rand(float n) {
-                return fract(sin(n * 12.9898) * 43758.5453);
-            }
+			// https://blog.actorsfit.com/a?ID=00001-0fe9ed1e-0483-4571-ab97-894fecb35983
+			vec3 YuvToRgb(vec3 col) {
+				float y = col.x;
+				float u = col.y;
+				float v = col.z;
+				
+				float fYmul = y * 1.1643828125;
+				float r = fYmul + 1.59602734375 * v - 0.870787598;
+				float g = fYmul - 0.39176171875 * u - 0.81296875 * v + 0.52959375;
+				float b = fYmul + 2.01723046875 * u - 1.081389160375;
 
-            vec3 rgb2hsv(vec3 c) {
+				return vec3(r, g, b);
+			}
+
+            vec3 RgbToHsv(vec3 c) {
                 vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
                 vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
                 vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
@@ -40,7 +49,7 @@
                 return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
             }
 
-            float RGB2Hue(vec3 c) {
+            float RgbToHue(vec3 c) {
                 float minc = min(min(c.r, c.g), c.b);
                 float maxc = max(max(c.r, c.g), c.b);
                 float div = 1.0 / (6.0 * max(maxc - minc, 1.0e-5));
@@ -52,24 +61,9 @@
             }
 
             float decode(vec3 data) {
-                /*
-                float dNormal = RGB2Hue(data) * 1529.0;
-
-                float dMin = _CutOff.x;
-                float dMax = _CutOff.y;
-
-                return dMin + ((dMax - dMin) * dNormal) / 1529.0;
-                */
-                return RGB2Hue(data);
+                return RgbToHue(data);
             }
-
-            /*
-            vec3 LinearToGammaSpaceAccurate(vec3 linRGB) {
-                // Exact version, useful for debugging.
-                return vec3(LinearToGammaSpaceExact(linRGB.r), LinearToGammaSpaceExact(linRGB.g), LinearToGammaSpaceExact(linRGB.b));
-            }
-            */
-       
+      
 			void main() {
 			    gl_PointSize = 2.0;
 			    
@@ -109,7 +103,7 @@
 			    vec4 col = texture2D(tex, uvRgb);
 			    //col.x *= 0.92;
 			    //col.y *= 0.99;
-			    gl_FragColor = vec4(col.xyz, 1.0);
+			    gl_FragColor = vec4(saturation(col.xyz, 1.2), 1.0);
 			}
     	</script>
 	</head>
@@ -139,7 +133,7 @@
 				scene = new THREE.Scene();
 
 				const dim = 1024;
-				geometry = new THREE.SphereBufferGeometry(1, dim, dim);
+				geometry = new THREE.PlaneBufferGeometry(1, 1, dim, dim);
 
 				video = document.createElement("video");
 				video.crossOrigin = "anonymous";
