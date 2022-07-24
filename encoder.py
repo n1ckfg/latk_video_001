@@ -33,25 +33,6 @@ def changeExtension(_url, _newExt, _append=None):
     print ("New url: " + returns)
     return returns
 
-# https://stackoverflow.com/questions/22236956/rgb-to-hsv-via-pil-and-colorsys
-def PilHsvColor(img):
-    if isinstance(img,Image.Image):
-        r,g,b = img.split()
-        Hdat = []
-        Sdat = []
-        Vdat = [] 
-        for rd,gn,bl in zip(r.getdata(),g.getdata(),b.getdata()) :
-            h,s,v = colorsys.rgb_to_hsv(rd/255.,gn/255.,bl/255.)
-            Hdat.append(int(h*255.))
-            Sdat.append(int(s*255.))
-            Vdat.append(int(v*255.))
-        r.putdata(Hdat)
-        g.putdata(Sdat)
-        b.putdata(Vdat)
-        return Image.merge('RGB',(r,g,b))
-    else:
-        return None
-
 def hsvToRgb(hue): # float
     h = hue * 6.0 - 2.0
     r = abs(h - 1.0) - 1.0
@@ -197,11 +178,11 @@ def main():
 
         vertexPositions = ms.current_mesh().vertex_matrix()
 
-        imgX = Image.new("HSV", (hdim, hdim))
+        imgX = Image.new("RGB", (hdim, hdim))
         imgXPixels = imgX.load()
-        imgY = Image.new("HSV", (hdim, hdim))
+        imgY = Image.new("RGB", (hdim, hdim))
         imgYPixels = imgY.load()
-        imgZ = Image.new("HSV", (hdim, hdim))
+        imgZ = Image.new("RGB", (hdim, hdim))
         imgZPixels = imgZ.load()
 
         for j, vert in enumerate(vertexPositions):
@@ -217,13 +198,10 @@ def main():
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
 
-        imgX = PilHsvColor(imgX)
         imgFinal.paste(imgX, (hdim, 0))
 
-        imgY = PilHsvColor(imgY)
         imgFinal.paste(imgY, (hdim, hdim))
         
-        imgZ = PilHsvColor(imgZ)
         imgFinal.paste(imgZ, (0, hdim))
         
         imgFinal.save(outputPath + "/output" + str(i) + ".png")
