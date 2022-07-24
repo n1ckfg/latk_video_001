@@ -209,8 +209,23 @@ def main():
         print("Finished frame " + str(counter+1))
         counter += 1
 
+
     # https://trac.ffmpeg.org/wiki/Encode/H.264
     # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 5 -preset slow -r 30 output.mp4
-    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 5 -r 30 output/output.mp4")
+    #os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 5 -r 30 output/output.mp4")
+
+    VIDEO_BITRATE="5M"
+    VIDEO_BITRATE_MAX="5M"
+    VIDEO_BITRATE_MIN="5M"
+    AUDIO_BITRATE="320k"
+
+    ENCODE_SPEED="slow"
+    PROFILE="high"
+    LEVEL="5.2"
+
+    cmd = "ffmpeg -y -i " + outputPath + "/output%d.png -vcodec libx264 -pix_fmt yuv420p -preset:v " + ENCODE_SPEED + " -b:v " + VIDEO_BITRATE + " -maxrate " + VIDEO_BITRATE_MAX + " -minrate " + VIDEO_BITRATE_MIN + " -profile:v " + PROFILE + " -level " + LEVEL + " -acodec aac -strict -2 -b:a " + AUDIO_BITRATE + " -r 30 " + outputPath + "/output.mp4"
+    print(cmd)
+
+    os.system(cmd)
 
 main()
