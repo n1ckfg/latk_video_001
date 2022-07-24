@@ -15,26 +15,30 @@
 
     	<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec2 vUv;
-			uniform sampler2D tex;
-
-			const float _DepthSaturationThreshhold = 0.5; 
-			const float _DepthBrightnessThreshold = 0.5; 
-			const float  _Epsilon = 0.03;
+			uniform sampler2D tex;	
+			const float maxVal = 256.0 * 256.0;
 
 			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 			// https://stackoverflow.com/questions/6893302/decode-rgb-value-to-single-float-without-bit-shift-in-glsl
 			// https://github.com/processing/processing4/blob/master/core/src/processing/core/PApplet.java#L9800
 			// http://marcodiiga.github.io/encoding-normalized-floats-to-rgba8-vectors
+			// https://vrdust.org.uk/wp-content/plugins/vcdustbackground/includes/dust_shaders.js
 
-			vec3 rgb2hsv(vec3 c) {
-			    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-			    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-			    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+			const float  _Epsilon = 0.03;
 
-			    float d = q.x - min(q.w, q.y);
-			    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + _Epsilon)), d / (q.x + _Epsilon), q.x);
+			// https://stackoverflow.com/questions/55930123/converting-yuv-ycbcr420p-to-rgb-in-glsl-fragment-shader
+			vec3 rgb2hsv(vec3 col) {
+				float y = col.r;
+				float u = col.r - 0.5;
+				float v = col.r - 0.5;
+				
+				float r = y + 1.402 * v;
+				float g = y - 0.344 * u - 0.714 * v;
+				float b = y + 1.772 * u;
+				
+				return vec3(r, g, b);
 			}
-
+       
 			void main() {
 			    gl_PointSize = 2.0;
 			    
@@ -43,13 +47,13 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    vec4 colX = texture2D(tex, uvX);
-			    vec4 colY = texture2D(tex, uvY);
-			    vec4 colZ = texture2D(tex, uvZ);
+			    vec3 colX = texture2D(tex, uvX).rgb;
+			    vec3 colY = texture2D(tex, uvY).rgb;
+			    vec3 colZ = texture2D(tex, uvZ).rgb;
 
-			    float posX = colX.x;
-			    float posY = colX.y;
-			    float posZ = colX.z;	    
+			    float posX = rgb2hsv(colX).y;
+			    float posY = rgb2hsv(colY).y;
+			    float posZ = rgb2hsv(colZ).y;	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 

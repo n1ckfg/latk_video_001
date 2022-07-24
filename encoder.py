@@ -5,6 +5,7 @@ import pymeshlab as ml
 import numpy as np
 import PIL.ImageDraw as ImageDraw
 import PIL.Image as Image
+import colorsys
 
 def xyFromLoc(loc, width):
     x = loc % width
@@ -32,22 +33,33 @@ def changeExtension(_url, _newExt, _append=None):
     print ("New url: " + returns)
     return returns
 
-def encodeDepthToColor(depth):
-    # This is in RGB color
-    r = depth
-    s = 1.0
-    b = 1.0
-    if (r < 26.0 / 255.0): 
-        b = 0.0
-        s = 0.0
-    # This is in HSV color
-    return (1.0 - r, s, b)
+# https://stackoverflow.com/questions/22236956/rgb-to-hsv-via-pil-and-colorsys
+def HSVColor(img):
+    if isinstance(img,Image.Image):
+        r,g,b = img.split()
+        Hdat = []
+        Sdat = []
+        Vdat = [] 
+        for rd,gn,bl in zip(r.getdata(),g.getdata(),b.getdata()) :
+            h,s,v = colorsys.rgb_to_hsv(rd/255.,gn/255.,bl/255.)
+            Hdat.append(int(h*255.))
+            Sdat.append(int(s*255.))
+            Vdat.append(int(v*255.))
+        r.putdata(Hdat)
+        g.putdata(Sdat)
+        b.putdata(Vdat)
+        return Image.merge('RGB',(r,g,b))
+    else:
+        return None
+
+def depthToHsv(val):
+    return (0, 0, val)
 
 def colorFloatToColorInt(rgb):
     return (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
 
 def encodeDepthToColorInt(depth):
-    return colorFloatToColorInt(encodeDepthToColor(depth))
+    return colorFloatToColorInt(depthToHsv(depth))
 
 def main():
     argv = sys.argv
@@ -201,13 +213,13 @@ def main():
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))
 
-        imgX.convert("RGB")
+        imgX = HSVColor(imgX)
         imgFinal.paste(imgX, (hdim, 0))
 
-        imgY.convert("RGB")
+        imgY = HSVColor(imgY)
         imgFinal.paste(imgY, (hdim, hdim))
         
-        imgZ.convert("RGB")
+        imgZ = HSVColor(imgZ)
         imgFinal.paste(imgZ, (0, hdim))
         
         imgFinal.save(outputPath + "/output" + str(i) + ".png")
