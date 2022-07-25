@@ -12,14 +12,14 @@ def xyFromLoc(loc, width):
     y = (loc - x) / width
     return x, y
 
+def fract(x):
+    return x - np.floor(x)
+
+def mix(x, y, a):
+    return x * (1.0 - a) + y * a 
+
 def remap(value, min1, max1, min2, max2):
     return np.interp(value, [min1, max1], [min2, max2])
-
-def remap2(value, min1, max1, min2, max2):
-    range1 = max1 - min1
-    range2 = max2 - min2
-    valueScaled = float(value - min1) / float(range1)
-    return min2 + (valueScaled * range2)
 
 def changeExtension(_url, _newExt, _append=None):
     returns = ""
@@ -33,18 +33,34 @@ def changeExtension(_url, _newExt, _append=None):
     print ("New url: " + returns)
     return returns
 
-def hsvToRgb(hue): # float
-    h = hue * 6.0 - 2.0
+def hsvToRgb(hsv): # float
+    h = hsv * 6.0 - 2.0
     r = abs(h - 1.0) - 1.0
     g = 2.0 - abs(h)
     b = 2.0 - abs(h - 2.0)
     return (r, g, b)
 
+def rgbToHsv(rgb): # vec3
+    minc = min(min(rgb[0], rgb[1]), rgb[2])
+    maxc = max(max(rgb[0], rgb[1]), rgb[2])
+    div = 1.0 / (6.0 * max(maxc - minc, 1.0e-5))
+    r = (rgb[1] - rgb[2]) * div
+    g = 1.0 / 3.0 + (rgb[2] - rgb[0]) * div
+    b = 2.0 / 3.0 + (rgb[0] - rgb[1]) * div
+    d = mix(r, mix(g, b, rgb[1] < rgb[2]), rgb[0] < max(rgb[1], rgb[2]))
+    return fract(d + 1.0)
+
 def colorFloatToColorInt(rgb):
     return (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
 
-def finalEncodeDepthToColorInt(depth):
-    return colorFloatToColorInt(hsvToRgb(depth))
+def encoder(depth):
+    result = hsvToRgb(depth)
+    test = rgbToHsv(result)
+    #print(str(depth) + ", " + str(test) + ", " + str(abs(depth - test)))
+    if (abs(depth - test) > 1.0):
+        return 0
+    else:
+        return colorFloatToColorInt(result)
 
 def main():
     argv = sys.argv
@@ -166,18 +182,10 @@ def main():
         mesh = ms.current_mesh()
        
         vertexColors = ms.current_mesh().vertex_color_matrix()
+        vertexPositions = ms.current_mesh().vertex_matrix()
 
         imgRgb = Image.new("RGB", (hdim, hdim))
         imgRgbPixels = imgRgb.load()
-
-        for j, vertexColor in enumerate(vertexColors):
-            color = (int(vertexColor[0] * 255.0), int(vertexColor[1] * 255.0), int(vertexColor[2] * 255.0))
-
-            jx, jy = xyFromLoc(j, hdim)
-            imgRgbPixels[jx, jy] = color
-
-        vertexPositions = ms.current_mesh().vertex_matrix()
-
         imgX = Image.new("RGB", (hdim, hdim))
         imgXPixels = imgX.load()
         imgY = Image.new("RGB", (hdim, hdim))
@@ -186,14 +194,22 @@ def main():
         imgZPixels = imgZ.load()
 
         for j, vert in enumerate(vertexPositions):
+            color = (int(vertexColors[j][0] * 255.0), int(vertexColors[j][1] * 255.0), int(vertexColors[j][2] * 255.0))
+
             x = remap(vert[0], localDims[i][0], localDims[i][1], localNorms[i][0], localNorms[i][1])
             y = remap(vert[1], localDims[i][2], localDims[i][3], localNorms[i][2], localNorms[i][3])
             z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
-            jx, jy = xyFromLoc(j, hdim)
-            imgXPixels[jx, jy] = finalEncodeDepthToColorInt(x)
-            imgYPixels[jx, jy] = finalEncodeDepthToColorInt(y)
-            imgZPixels[jx, jy] = finalEncodeDepthToColorInt(z)
+            xResult = encoder(x)
+            yResult = encoder(y)
+            zResult = encoder(z)
+
+            if (xResult != 0 and yResult != 0 and zResult != 0):
+                jx, jy = xyFromLoc(j, hdim)
+                imgRgbPixels[jx, jy] = color
+                imgXPixels[jx, jy] = xResult
+                imgYPixels[jx, jy] = yResult
+                imgZPixels[jx, jy] = zResult
 
         imgFinal = Image.new("RGB", (dim, dim))
         imgFinal.paste(imgRgb, (0, 0))

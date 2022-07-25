@@ -26,29 +26,6 @@
 			// https://github.com/andybiar/Z-Depth-Image-Converter/
 
 			// https://blog.actorsfit.com/a?ID=00001-0fe9ed1e-0483-4571-ab97-894fecb35983
-			vec3 YuvToRgb(vec3 col) {
-				float y = col.x;
-				float u = col.y;
-				float v = col.z;
-				
-				float fYmul = y * 1.1643828125;
-				float r = fYmul + 1.59602734375 * v - 0.870787598;
-				float g = fYmul - 0.39176171875 * u - 0.81296875 * v + 0.52959375;
-				float b = fYmul + 2.01723046875 * u - 1.081389160375;
-
-				return vec3(r, g, b);
-			}
-
-            vec3 RgbToHsv(vec3 c) {
-                vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-                vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-                vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-
-                float d = q.x - min(q.w, q.y);
-                float e = 1.0e-10;
-                return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-            }
-
             float RgbToHue(vec3 c) {
                 float minc = min(min(c.r, c.g), c.b);
                 float maxc = max(max(c.r, c.g), c.b);
@@ -60,7 +37,7 @@
                 return fract(d + 1.0);
             }
 
-            float decode(vec3 data) {
+            float decoder(vec3 data) {
                 return RgbToHue(data);
             }
       
@@ -72,13 +49,9 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    vec3 colX = texture2D(tex, uvX).rgb;
-			    vec3 colY = texture2D(tex, uvY).rgb;
-			    vec3 colZ = texture2D(tex, uvZ).rgb;
-
-			    float posX = decode(colX);
-			    float posY = decode(colY);
-			    float posZ = decode(colZ);	    
+			    float posX = decoder(texture2D(tex, uvX).rgb);
+			    float posY = decoder(texture2D(tex, uvY).rgb);
+			    float posZ = decoder(texture2D(tex, uvZ).rgb);	    
 	    
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
@@ -133,7 +106,7 @@
 				scene = new THREE.Scene();
 
 				const dim = 1024;
-				geometry = new THREE.PlaneBufferGeometry(1, 1, dim, dim);
+				geometry = new THREE.SphereBufferGeometry(1, dim, dim);
 
 				video = document.createElement("video");
 				video.crossOrigin = "anonymous";
