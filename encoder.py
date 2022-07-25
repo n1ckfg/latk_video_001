@@ -6,6 +6,12 @@ import numpy as np
 import PIL.ImageDraw as ImageDraw
 import PIL.Image as Image
 import colorsys
+import kmeans
+
+class PointData(object):
+    def __init__(self, _pos, _col):
+        self.pos = _pos
+        self.col = _col
 
 def xyFromLoc(loc, width):
     x = loc % width
@@ -183,6 +189,12 @@ def main():
        
         vertexColors = ms.current_mesh().vertex_color_matrix()
         vertexPositions = ms.current_mesh().vertex_matrix()
+        points = []
+        for j in range(0, len(vertexPositions)):
+            pos = vertexPositions[j]
+            col = vertexColors[j]
+            if (len(pos) == 3 and len(col) == 4):
+                points.append(PointData(pos, col))
 
         imgRgb = Image.new("RGB", (hdim, hdim))
         imgRgbPixels = imgRgb.load()
@@ -193,12 +205,12 @@ def main():
         imgZ = Image.new("RGB", (hdim, hdim))
         imgZPixels = imgZ.load()
 
-        for j, vert in enumerate(vertexPositions):
-            color = (int(vertexColors[j][0] * 255.0), int(vertexColors[j][1] * 255.0), int(vertexColors[j][2] * 255.0))
+        for j, point in enumerate(points):
+            color = (int(point.col[0] * 255.0), int(point.col[1] * 255.0), int(point.col[2] * 255.0))
 
-            x = remap(vert[0], localDims[i][0], localDims[i][1], localNorms[i][0], localNorms[i][1])
-            y = remap(vert[1], localDims[i][2], localDims[i][3], localNorms[i][2], localNorms[i][3])
-            z = remap(vert[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
+            x = remap(point.pos[0], localDims[i][0], localDims[i][1], localNorms[i][0], localNorms[i][1])
+            y = remap(point.pos[1], localDims[i][2], localDims[i][3], localNorms[i][2], localNorms[i][3])
+            z = remap(point.pos[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
             xResult = encoder(x)
             yResult = encoder(y)
