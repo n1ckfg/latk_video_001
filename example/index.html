@@ -7,7 +7,7 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<link rel="stylesheet" href="./css/main.css"/>
 
-		<script src="./js/libraries/three.js"></script>
+		<script src="./js/libraries/three.min.js"></script>
 		<script src="./js/libraries/util.js/general-util.js"></script>
 		<script src="./js/libraries/util.js/threejs-util.js"></script>
 		<script src="./js/libraries/util.js/threejs-wasd.js"></script>
@@ -138,12 +138,15 @@
 
 				video = document.createElement("video");
 				video.crossOrigin = "anonymous";
+        		video.setAttribute('crossorigin', 'anonymous');
+				video.setAttribute("webkit-playsinline", "webkit-playsinline");
+        		video.setAttribute('playsinline', 'playsinline');
 				//video.width = 1024;
 				//video.height = 1024;
+        		video.autoplay = true;
 				video.loop = true;
 				video.muted = true;
 				video.src = "./images/output.mp4";
-				video.setAttribute("webkit-playsinline", "webkit-playsinline");
 				video.play();
 
 				texture = new THREE.VideoTexture(video);
