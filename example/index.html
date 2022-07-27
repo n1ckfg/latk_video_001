@@ -15,6 +15,7 @@
 
     	<script type="x-shader/x-vertex" id="vertexShader">
 			varying vec2 vUv;
+			varying float visibility;
 			uniform sampler2D tex;	
 
  			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
@@ -70,7 +71,9 @@
 			    float posX = decoder(texture2D(tex, uvX).rgb);
 			    float posY = decoder(texture2D(tex, uvY).rgb);
 			    float posZ = decoder(texture2D(tex, uvZ).rgb);	    
-	    
+	    	
+	    		visibility = posX == 0.0 || posY == 0.0 || posZ == 0.0 ? 0.0 : 1.0;
+
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
 			    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
@@ -79,6 +82,7 @@
 
     	<script type="x-shader/x-fragment" id="fragmentShader">
 			varying vec2 vUv;
+			varying float visibility;
 			uniform sampler2D tex;
 
 			// https://github.com/CesiumGS/cesium/blob/main/Source/Shaders/Builtin/Functions/saturation.glsl
@@ -93,7 +97,7 @@
 			    vec2 uvRgb = vec2(vUv.x * 0.5, 0.5 + vUv.y * 0.5);
 			    vec4 col = texture2D(tex, uvRgb);
 
-			    if ((col.x + col.y + col.z) / 3.0 < 0.01) discard;
+			    if (visibility == 0.0) discard;
 
 			    //col.x *= 0.92;
 			    //col.y *= 0.99;
