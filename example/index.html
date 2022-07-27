@@ -34,7 +34,12 @@
                 float g = 1.0 / 3.0 + (c.b - c.r) * div;
                 float b = 2.0 / 3.0 + (c.r - c.g) * div;
                 float d = mix(r, mix(g, b, c.g < c.b), c.r < max(c.g, c.b));
-                return fract(d + 1.0);
+                //return fract(d + 1.0);
+                if (d == 0.0) {
+                	return 1.0;
+                } else {
+                	return fract(d);
+            	}
             }
 
             float decoder(vec3 data) {
