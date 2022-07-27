@@ -71,7 +71,7 @@ def encoder(depth, debug=False):
             return 0
     return colorFloatToColorInt(result)
 
-def main():
+def main(debug=False):
     argv = sys.argv
     argv = argv[argv.index("--") + 1:] # get all args after "--"
 
@@ -89,27 +89,29 @@ def main():
 
     dim = 1024
     hdim = int(dim / 2)
+    tileDim = int(dim / 4)
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
     counter = 0
 
-    imgTest1 = Image.open("test/orig.png")
-    imgTest1Pixels = imgTest1.load()
-    for i in range(0, imgTest1.width * imgTest1.height):
-        x, y = xyFromLoc(i, imgTest1.width)
-        col = imgTest1Pixels[x, y]
-        imgTest1Pixels[x, y] = encoder(float(col[0]) / 255.0)
-    imgTest1.save("test/test1.png")
-    
-    imgTest2 = Image.open("test/test1.png")
-    imgTest2Pixels = imgTest2.load()
-    for i in range(0, imgTest2.width * imgTest2.height):
-        x, y = xyFromLoc(i, imgTest2.width)
-        d = rgbToHue(colorIntToColorFloat(imgTest2Pixels[x, y]))
-        imgTest2Pixels[x, y] = colorFloatToColorInt((d, d, d))
-    imgTest2.save("test/test2.png")
-    print ("Wrote test images.")
+    if (debug == True):
+        imgTest1 = Image.open("test/orig.png")
+        imgTest1Pixels = imgTest1.load()
+        for i in range(0, imgTest1.width * imgTest1.height):
+            x, y = xyFromLoc(i, imgTest1.width)
+            col = imgTest1Pixels[x, y]
+            imgTest1Pixels[x, y] = encoder(float(col[0]) / 255.0)
+        imgTest1.save("test/test1.png")
+        
+        imgTest2 = Image.open("test/test1.png")
+        imgTest2Pixels = imgTest2.load()
+        for i in range(0, imgTest2.width * imgTest2.height):
+            x, y = xyFromLoc(i, imgTest2.width)
+            d = rgbToHue(colorIntToColorFloat(imgTest2Pixels[x, y]))
+            imgTest2Pixels[x, y] = colorFloatToColorInt((d, d, d))
+        imgTest2.save("test/test2.png")
+        print ("Wrote test images.")
     
     for fileName in os.listdir(inputPath):
         fileName = fileName.lower()
@@ -132,7 +134,8 @@ def main():
         ms.load_new_mesh(urls[i])
         mesh = ms.current_mesh()
 
-        newSampleNum = hdim * hdim #mesh.vertex_number()
+        newSampleNum = tileDim * tileDim #mesh.vertex_number()
+
         if (mesh.edge_number() == 0 and mesh.face_number() == 0):
             ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=True) # exactnumflag=True 
         else:
@@ -216,13 +219,13 @@ def main():
             if (len(pos) == 3 and len(col) == 4):
                 points.append(PointData(pos, col))
 
-        imgRgb = Image.new("RGB", (hdim, hdim))
+        imgRgb = Image.new("RGB", (tileDim, tileDim))
         imgRgbPixels = imgRgb.load()
-        imgX = Image.new("RGB", (hdim, hdim))
+        imgX = Image.new("RGB", (tileDim, tileDim))
         imgXPixels = imgX.load()
-        imgY = Image.new("RGB", (hdim, hdim))
+        imgY = Image.new("RGB", (tileDim, tileDim))
         imgYPixels = imgY.load()
-        imgZ = Image.new("RGB", (hdim, hdim))
+        imgZ = Image.new("RGB", (tileDim, tileDim))
         imgZPixels = imgZ.load()
 
         for j, point in enumerate(points):
@@ -237,19 +240,22 @@ def main():
             zResult = encoder(z)
 
             if (xResult != 0 and yResult != 0 and zResult != 0):
-                jx, jy = xyFromLoc(j, hdim)
+                jx, jy = xyFromLoc(j, tileDim)
                 imgRgbPixels[jx, jy] = color
                 imgXPixels[jx, jy] = xResult
                 imgYPixels[jx, jy] = yResult
                 imgZPixels[jx, jy] = zResult
 
         imgFinal = Image.new("RGB", (dim, dim))
+
+        imgRgb = imgRgb.resize((hdim, hdim), 0)
+        imgX = imgX.resize((hdim, hdim), 0)
+        imgY = imgY.resize((hdim, hdim), 0)
+        imgZ = imgZ.resize((hdim, hdim), 0)
+
         imgFinal.paste(imgRgb, (0, 0))
-
         imgFinal.paste(imgX, (hdim, 0))
-
-        imgFinal.paste(imgY, (hdim, hdim))
-        
+        imgFinal.paste(imgY, (hdim, hdim))      
         imgFinal.paste(imgZ, (0, hdim))
         
         imgFinal.save(outputPath + "/output" + str(i) + ".png")

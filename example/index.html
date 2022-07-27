@@ -143,8 +143,8 @@
 				video.setAttribute("webkit-playsinline", "webkit-playsinline");
 				video.play();
 
-				//texture = new THREE.VideoTexture(video);
-				texture = new THREE.TextureLoader().load("./images/output0.png");
+				texture = new THREE.VideoTexture(video);
+				//texture = new THREE.TextureLoader().load("./images/output0.png");
         		
         		texture.format = THREE.RGBAFormat;
         		texture.minFilter = THREE.NearestFilter;
