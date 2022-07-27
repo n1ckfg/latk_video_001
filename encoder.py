@@ -89,7 +89,7 @@ def main(debug=False):
 
     dim = 1024
     hdim = int(dim / 2)
-    tileDim = int(dim / 4)
+    tileDim = int(dim / 16)
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
@@ -265,9 +265,9 @@ def main(debug=False):
 
 
     # https://trac.ffmpeg.org/wiki/Encode/H.264
-    # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 5 -preset slow -r 30 output.mp4
-    #os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 5 -r 30 output/output.mp4")
 
+    '''
+    # If you want more control over mp4 encoding
     VIDEO_BITRATE="5M"
     VIDEO_BITRATE_MAX="5M"
     VIDEO_BITRATE_MIN="5M"
@@ -281,5 +281,9 @@ def main(debug=False):
     print(cmd)
 
     os.system(cmd)
+	'''
+
+    # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 4 -preset slow -r 30 output.mp4
+    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 4 -r 30 output/output.mp4")
 
 main()

@@ -40,9 +40,12 @@
             }
             */
 
-            const float satThresh = 0.999;
-            const float brightThresh = 0.99;
-			const float epsilon = 1.0e-10;
+
+			// * * * * * * * * * * * * * * * * *
+			const float satThresh = 0.85; 		// orig 0.5
+            const float brightThresh = 0.85; 	// orig 0.5 or 0.9
+			const float epsilon = 1.0e-10; 		// orig 0.03
+			// * * * * * * * * * * * * * * * * *
 
             float RgbToHue(vec3 c) {
                 vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -61,7 +64,7 @@
             }
       
 			void main() {
-			    gl_PointSize = 2.0;
+			    gl_PointSize = 4.0;
 			    
 			    vUv = uv;
 			    vec2 uvX = vec2(0.5 + uv.x * 0.5, 0.5 + uv.y * 0.5);
@@ -130,7 +133,7 @@
 
 				scene = new THREE.Scene();
 
-				const dim = 1024;
+				const dim = 256;
 				geometry = new THREE.SphereBufferGeometry(1, dim, dim);
 
 				video = document.createElement("video");
