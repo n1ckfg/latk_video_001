@@ -39,8 +39,8 @@ def changeExtension(_url, _newExt, _append=None):
     print ("New url: " + returns)
     return returns
 
-def hsvToRgb(hsv): # float
-    h = hsv * 6.0 - 2.0
+def hueToRgb(hue): # float
+    h = hue * 6.0 - 2.0
     r = abs(h - 1.0) - 1.0
     g = 2.0 - abs(h)
     b = 2.0 - abs(h - 2.0)
@@ -54,19 +54,24 @@ def rgbToHsv(rgb): # vec3
     g = 1.0 / 3.0 + (rgb[2] - rgb[0]) * div
     b = 2.0 / 3.0 + (rgb[0] - rgb[1]) * div
     d = mix(r, mix(g, b, rgb[1] < rgb[2]), rgb[0] < max(rgb[1], rgb[2]))
-    return fract(d + 1.0)
+    d2 = fract(d + 1.0)
+    return (d2, d2, d2)
 
 def colorFloatToColorInt(rgb):
     return (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
 
+def colorIntToColorFloat(rgb):
+    return (float(rgb[0] / 255.0), float(rgb[1] / 255.0), float(rgb[2] / 255.0))
+
+
 def encoder(depth):
-    result = hsvToRgb(depth)
+    result = hueToRgb(depth)
     test = rgbToHsv(result)
     #print(str(depth) + ", " + str(test) + ", " + str(abs(depth - test)))
-    if (abs(depth - test) > 1.0):
-        return 0
-    else:
-        return colorFloatToColorInt(result)
+    #if (abs(depth - test) > 1.0):
+        #return 0
+    #else:
+    return colorFloatToColorInt(result)
 
 def main():
     argv = sys.argv
@@ -90,6 +95,22 @@ def main():
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
     counter = 0
+
+    imgTest1 = Image.open("test/orig.png")
+    imgTest1Pixels = imgTest1.load()
+    for i in range(0, imgTest1.width * imgTest1.height):
+    	x, y = xyFromLoc(i, imgTest1.width)
+    	col = imgTest1Pixels[x, y]
+    	imgTest1Pixels[x, y] = encoder(float(col[0]) / 255.0)
+    imgTest1.save("test/test1.png")
+    
+    imgTest2 = Image.open("test/test1.png")
+    imgTest2Pixels = imgTest2.load()
+    for i in range(0, imgTest2.width * imgTest2.height):
+    	x, y = xyFromLoc(i, imgTest2.width)
+    	col = imgTest2Pixels[x, y]
+    	imgTest2Pixels[x, y] = colorFloatToColorInt(rgbToHsv(colorIntToColorFloat(col)))
+    imgTest2.save("test/test2.png")
 
     for fileName in os.listdir(inputPath):
         fileName = fileName.lower()
