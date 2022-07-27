@@ -26,6 +26,7 @@
 			// https://github.com/andybiar/Z-Depth-Image-Converter/
 
 			// https://blog.actorsfit.com/a?ID=00001-0fe9ed1e-0483-4571-ab97-894fecb35983
+            /*
             float RgbToHue(vec3 c) {
                 float minc = min(min(c.r, c.g), c.b);
                 float maxc = max(max(c.r, c.g), c.b);
@@ -34,12 +35,24 @@
                 float g = 1.0 / 3.0 + (c.b - c.r) * div;
                 float b = 2.0 / 3.0 + (c.r - c.g) * div;
                 float d = mix(r, mix(g, b, c.g < c.b), c.r < max(c.g, c.b));
-                //return fract(d + 1.0);
-                if (d == 0.0) {
-                	return 1.0;
-                } else {
-                	return fract(d);
-            	}
+				return fract(d + 1.0);
+            }
+            */
+
+            const float satThresh = 0.999;
+            const float brightThresh = 0.99;
+			const float epsilon = 1.0e-10;
+
+            float RgbToHue(vec3 c) {
+                vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+                vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+                vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+                float d = q.x - min(q.w, q.y);
+                
+                vec3 result = vec3(abs(q.z + (q.w - q.y) / (6.0 * d + epsilon)), d / (q.x + epsilon), q.x);
+                
+                return result.g > satThresh && result.b > brightThresh ? result.r : 0.0;
             }
 
             float decoder(vec3 data) {
@@ -79,6 +92,9 @@
 			void main() {
 			    vec2 uvRgb = vec2(vUv.x * 0.5, 0.5 + vUv.y * 0.5);
 			    vec4 col = texture2D(tex, uvRgb);
+
+			    if ((col.x + col.y + col.z) / 3.0 < 0.01) discard;
+
 			    //col.x *= 0.92;
 			    //col.y *= 0.99;
 			    gl_FragColor = vec4(saturation(col.xyz, 1.2), 1.0);
@@ -123,8 +139,8 @@
 				video.setAttribute("webkit-playsinline", "webkit-playsinline");
 				video.play();
 
-				texture = new THREE.VideoTexture(video);
-				//texture = new THREE.TextureLoader().load("./images/output0.png");
+				//texture = new THREE.VideoTexture(video);
+				texture = new THREE.TextureLoader().load("./images/output0.png");
         		
         		texture.format = THREE.RGBAFormat;
         		texture.minFilter = THREE.NearestFilter;

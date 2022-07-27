@@ -54,10 +54,7 @@ def rgbToHue(rgb): # vec3
     g = 1.0 / 3.0 + (rgb[2] - rgb[0]) * div
     b = 2.0 / 3.0 + (rgb[0] - rgb[1]) * div
     d = mix(r, mix(g, b, rgb[1] < rgb[2]), rgb[0] < max(rgb[1], rgb[2]))
-    if (d == 0.0):
-        return 1.0
-    else:
-        return fract(d) #fract(d + 1.0)
+    return fract(d + 1.0)
 
 def colorFloatToColorInt(rgb):
     return (int(rgb[0] * 255.0), int(rgb[1] * 255.0), int(rgb[2] * 255.0))
@@ -97,7 +94,6 @@ def main():
     urls = []
     counter = 0
 
-    '''
     imgTest1 = Image.open("test/orig.png")
     imgTest1Pixels = imgTest1.load()
     for i in range(0, imgTest1.width * imgTest1.height):
@@ -114,7 +110,6 @@ def main():
         imgTest2Pixels[x, y] = colorFloatToColorInt((d, d, d))
     imgTest2.save("test/test2.png")
     print ("Wrote test images.")
-    '''
     
     for fileName in os.listdir(inputPath):
         fileName = fileName.lower()
