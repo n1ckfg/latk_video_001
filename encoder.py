@@ -6,7 +6,6 @@ import numpy as np
 import PIL.ImageDraw as ImageDraw
 import PIL.Image as Image
 import colorsys
-import kmeans
 
 class PointData(object):
     def __init__(self, _pos, _col):
