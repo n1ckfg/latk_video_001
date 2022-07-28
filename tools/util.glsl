@@ -19,3 +19,14 @@ vec3 rgb2hsv(vec3 c) {
     float d = q.x - min(q.w, q.y);
     return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + _Epsilon)), d / (q.x + _Epsilon), q.x);
 }
+
+float RgbToHue(vec3 c) {
+    float minc = min(min(c.r, c.g), c.b);
+    float maxc = max(max(c.r, c.g), c.b);
+    float div = 1.0 / (6.0 * max(maxc - minc, 1.0e-5));
+    float r = (c.g - c.b) * div;
+    float g = 1.0 / 3.0 + (c.b - c.r) * div;
+    float b = 2.0 / 3.0 + (c.r - c.g) * div;
+    float d = mix(r, mix(g, b, c.g < c.b), c.r < max(c.g, c.b));
+    return fract(d + 1.0);
+}

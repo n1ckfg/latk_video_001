@@ -14,32 +14,19 @@
 		<script src="./js/libraries/util.js/threejs-mouse.js"></script>
 
     	<script type="x-shader/x-vertex" id="vertexShader">
-			varying vec2 vUv;
-			varying float visibility;
-			uniform sampler2D tex;	
-
  			// https://stackoverflow.com/questions/18453302/how-do-you-pack-one-32bit-int-into-4-8bit-ints-in-glsl-webgl
 			// https://stackoverflow.com/questions/6893302/decode-rgb-value-to-single-float-without-bit-shift-in-glsl
 			// https://github.com/processing/processing4/blob/master/core/src/processing/core/PApplet.java#L9800
-			// http://marcodiiga.github.io/encoding-normalized-floats-to-rgba8-vectors
+			// https://marcodiiga.github.io/encoding-normalized-floats-to-rgba8-vectors
+			// https://blog.actorsfit.com/a?ID=00001-0fe9ed1e-0483-4571-ab97-894fecb35983
 			// https://vrdust.org.uk/wp-content/plugins/vcdustbackground/includes/dust_shaders.js
+			// https://github.com/juniorxsound/Depthkit.js
 			// https://github.com/simeonradivoev/kinect-hue-depth-encoding
 			// https://github.com/andybiar/Z-Depth-Image-Converter/
 
-			// https://blog.actorsfit.com/a?ID=00001-0fe9ed1e-0483-4571-ab97-894fecb35983
-            /*
-            float RgbToHue(vec3 c) {
-                float minc = min(min(c.r, c.g), c.b);
-                float maxc = max(max(c.r, c.g), c.b);
-                float div = 1.0 / (6.0 * max(maxc - minc, 1.0e-5));
-                float r = (c.g - c.b) * div;
-                float g = 1.0 / 3.0 + (c.b - c.r) * div;
-                float b = 2.0 / 3.0 + (c.r - c.g) * div;
-                float d = mix(r, mix(g, b, c.g < c.b), c.r < max(c.g, c.b));
-				return fract(d + 1.0);
-            }
-            */
-
+			varying vec2 vUv;
+			varying float visibility;
+			uniform sampler2D tex;	
 
 			// * * * * * * * * * * * * * * * * *
 			const float satThresh = 0.85; 		// orig 0.5
@@ -47,7 +34,7 @@
 			const float epsilon = 1.0e-10; 		// orig 0.03
 			// * * * * * * * * * * * * * * * * *
 
-            float RgbToHue(vec3 c) {
+            float rgbToHue(vec3 c) {
                 vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
                 vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
                 vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
@@ -60,7 +47,7 @@
             }
 
             float decoder(vec3 data) {
-                return RgbToHue(data);
+                return rgbToHue(data);
             }
       
 			void main() {
@@ -84,12 +71,12 @@
 		</script>
 
     	<script type="x-shader/x-fragment" id="fragmentShader">
+			// https://github.com/CesiumGS/cesium/blob/main/Source/Shaders/Builtin/Functions/saturation.glsl
+
 			varying vec2 vUv;
 			varying float visibility;
 			uniform sampler2D tex;
-
-			// https://github.com/CesiumGS/cesium/blob/main/Source/Shaders/Builtin/Functions/saturation.glsl
-		    // Algorithm from Chapter 16 of OpenGL Shading Language
+			
 			vec3 saturation(vec3 rgb, float adjustment) {
 			    const vec3 W = vec3(0.2125, 0.7154, 0.0721);
 			    vec3 intensity = vec3(dot(rgb, W));
@@ -102,8 +89,6 @@
 
 			    if (visibility == 0.0) discard;
 
-			    //col.x *= 0.92;
-			    //col.y *= 0.99;
 			    gl_FragColor = vec4(saturation(col.xyz, 1.2), 1.0);
 			}
     	</script>
