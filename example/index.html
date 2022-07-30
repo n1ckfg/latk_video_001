@@ -31,7 +31,7 @@
 			// * * * * * * * * * * * * * * * * *
 			const float satThresh = 0.85; 		// orig 0.5
             const float brightThresh = 0.85; 	// orig 0.5 or 0.9
-			const float epsilon = 1.0e-10; 		// orig 0.03
+			const float epsilon = 1.0e-10; 		// 0.0000000001 // orig 0.03
 			// * * * * * * * * * * * * * * * * *
 
             float rgbToHue(vec3 c) {
@@ -45,11 +45,7 @@
                 
                 return result.g > satThresh && result.b > brightThresh ? result.r : 0.0;
             }
-
-            float decoder(vec3 data) {
-                return rgbToHue(data);
-            }
-      
+     
 			void main() {
 			    gl_PointSize = 4.0;
 			    
@@ -58,9 +54,9 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    float posX = decoder(texture2D(tex, uvX).rgb);
-			    float posY = decoder(texture2D(tex, uvY).rgb);
-			    float posZ = decoder(texture2D(tex, uvZ).rgb);	    
+			    float posX = rgbToHue(texture2D(tex, uvX).rgb);
+			    float posY = rgbToHue(texture2D(tex, uvY).rgb);
+			    float posZ = rgbToHue(texture2D(tex, uvZ).rgb);	    
 	    	
 	    		visibility = posX == 0.0 || posY == 0.0 || posZ == 0.0 ? 0.0 : 1.0;
 
