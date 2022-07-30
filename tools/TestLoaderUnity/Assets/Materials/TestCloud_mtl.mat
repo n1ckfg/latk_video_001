@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TestCloud_mtl
-  m_Shader: {fileID: 4800000, guid: bbdffdfa9dbf39b43b311284422a2ce7, type: 3}
+  m_Shader: {fileID: 4800000, guid: 50b8fb0924e64fb4797ceb90fb5309d0, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
@@ -52,7 +52,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: df12ec48ab2a7e3479082230cb07ed3d, type: 3}
+        m_Texture: {fileID: 2800000, guid: 40d4f0bdc6235b24aaa32b08e7149fe5, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -81,7 +81,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _BlendOp: 0
-    - _Brightness: 1
+    - _BrightThresh: 0.85
+    - _Brightness: 1.22
     - _BumpScale: 1
     - _CameraFadingEnabled: 0
     - _CameraFarFadeDistance: 2
@@ -98,6 +99,7 @@ Material:
     - _DistortionStrengthScaled: 0
     - _DstBlend: 0
     - _EmissionEnabled: 0
+    - _Epsilon: 1e-10
     - _FlipbookMode: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
@@ -107,7 +109,9 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Scaler: 1
+    - _SatThresh: -0.18
+    - _Saturation: 1.29
+    - _Scaler: 0.16
     - _Size: 0.86
     - _SmoothnessTextureChannel: 0
     - _SoftParticlesEnabled: 0

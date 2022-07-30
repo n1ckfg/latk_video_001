@@ -8,6 +8,10 @@ Shader "Nick/LatkVideo" {
 		_Scaler("Scaler", float) = 1.0
 		_Size("Size", float) = 0.5
 		_Brightness("Brightness", float) = 1.0
+		_Saturation("Saturation", float) = 1.0
+		_SatThresh("Saturation Threshold", float) = 0.85
+		_BrightThresh("Bright Threshold", float) = 0.85
+		_Epsilon("Epsilon", float) = 0.0000000001
 	}
 
 	SubShader {
@@ -30,11 +34,13 @@ Shader "Nick/LatkVideo" {
 				float4	pos			: POSITION;
 				float3	normal		: NORMAL;
 				float4  color		: COLOR;
-			};
+				float visibility : TEXCOORD1;
+		};
 
 			struct FS_INPUT {
 				float4	pos			: POSITION;
 				float4  color		: COLOR;
+				float visibility : TEXCOORD1;
 			};
 
 
@@ -46,26 +52,33 @@ Shader "Nick/LatkVideo" {
 			float _Scaler;
 			float _Size;
 			float _Brightness;
+			float _Saturation;
+			float _BrightThresh;
+			float _SatThresh;
+			float _Epsilon;
 			float4x4 _VP;
 
 			// **************************************************************
 			// Shader Programs												*
 			// **************************************************************
 
-			float unpackColor(float3 color) {
-				float3 bitSh = float3(1.0, 1.0 / 256.0, 1.0 / 65536.0); // , 1.0 / 16777216.0);
-				return dot(color, bitSh);
+			float rgbToHue(float3 c) {
+				float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+				float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
+				float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
+
+				float d = q.x - min(q.w, q.y);
+
+				float3 result = float3(abs(q.z + (q.w - q.y) / (6.0 * d + _Epsilon)), d / (q.x + _Epsilon), q.x);
+
+				return result.g > _SatThresh && result.b > _BrightThresh ? result.r : 0.0;
 			}
 
-			float rgbToHue(float3 c) {
-				float minc = min(min(c.r, c.g), c.b);
-				float maxc = max(max(c.r, c.g), c.b);
-				float div = 1 / (6 * max(maxc - minc, 1e-5));
-				float r = (c.g - c.b) * div;
-				float g = 1.0 / 3 + (c.b - c.r) * div;
-				float b = 2.0 / 3 + (c.r - c.g) * div;
-				float d = lerp(r, lerp(g, b, c.g < c.b), c.r < max(c.g, c.b));
-				return frac(d + 1);
+			float3 saturation(float3 rgb, float adjustment) {
+				float3 W = float3(0.2125, 0.7154, 0.0721);
+				float intensity = dot(rgb, W);
+				float3 intensity3 = float3(intensity, intensity, intensity);
+				return lerp(intensity, rgb, adjustment);
 			}
 
 			// Vertex Shader ------------------------------------------------
@@ -80,6 +93,8 @@ Shader "Nick/LatkVideo" {
 				float posX = rgbToHue(tex2Dlod(_MainTex, float4(uvX, 0, 0))	);
 				float posY = rgbToHue(tex2Dlod(_MainTex, float4(uvY, 0, 0)));
 				float posZ = rgbToHue(tex2Dlod(_MainTex, float4(uvZ, 0, 0)));
+
+				output.visibility = posX == 0.0 || posY == 0.0 || posZ == 0.0 ? 0.0 : 1.0;
 
 				v.vertex.xyz = float3(posX, posZ, posY) * _Scaler;
 
@@ -118,6 +133,7 @@ Shader "Nick/LatkVideo" {
 				#endif
 				#endif
 				FS_INPUT pIn;
+				pIn.visibility = p[0].visibility;
 
 				pIn.pos = mul(vp, v[0]);
 				pIn.color = p[0].color;
@@ -138,7 +154,9 @@ Shader "Nick/LatkVideo" {
 
 			// Fragment Shader -----------------------------------------------
 			float4 FS_Main(FS_INPUT input) : COLOR{
-				return input.color * _Brightness;
+				if (input.visibility == 0.0) discard;
+
+				return float4(saturation(input.color.xyz, _Saturation) * _Brightness, 1.0);
 			}
 
 			ENDCG
