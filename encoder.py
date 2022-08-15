@@ -250,6 +250,8 @@ def main(debug=False):
         imgZ = Image.new("RGB", (tileDim, tileDim))
         imgZPixels = imgZ.load()
 
+        pixelErrorCount = 0
+
         for j, point in enumerate(points):
             color = (int(point.col[0] * 255.0), int(point.col[1] * 255.0), int(point.col[2] * 255.0))
 
@@ -262,11 +264,17 @@ def main(debug=False):
             zResult = encoder(z)
 
             if (xResult != 0 and yResult != 0 and zResult != 0):
-                jx, jy = xyFromLoc(j, tileDim)
-                imgRgbPixels[jx, jy] = color
-                imgXPixels[jx, jy] = xResult
-                imgYPixels[jx, jy] = yResult
-                imgZPixels[jx, jy] = zResult
+                try:
+                    jx, jy = xyFromLoc(j, tileDim)
+                    imgRgbPixels[jx, jy] = color
+                    imgXPixels[jx, jy] = xResult
+                    imgYPixels[jx, jy] = yResult
+                    imgZPixels[jx, jy] = zResult
+                except:
+                    pixelErrorCount += 1
+
+        if (pixelErrorCount > 0):
+        	print("Error reading " + str(pixelErrorCount) + " / " + str(len(points)) + " colors.")
 
         imgFinal = Image.new("RGB", (dim, dim))
 
