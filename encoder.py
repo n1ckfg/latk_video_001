@@ -135,11 +135,34 @@ def main(debug=False):
 
         newSampleNum = tileDim * tileDim #mesh.vertex_number()
 
-        if (mesh.edge_number() == 0 and mesh.face_number() == 0):
-            ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=True) # exactnumflag=True 
-        else:
-            ms.poisson_disk_sampling(samplenum=newSampleNum, subsample=False) # exactnumflag=True
-        ms.vertex_attribute_transfer(sourcemesh=0, targetmesh=1)
+        if (mesh.edge_number() != 0 or mesh.face_number() != 0):
+            numUvs = 0
+            
+            try:
+                numUvs = len(ms.current_mesh().vertex_tex_coord_matrix())
+                if (numUvs > 0):
+                    print("Found " + str(numUvs) + " vertex texture coordinates.")
+            except:
+                print("Found " + str(numUvs) + " vertex texture coordinates.")
+
+            if (numUvs == 0):
+                try:
+                    numUvs = len(ms.current_mesh().wedge_tex_coord_matrix())
+                    if (numUvs > 0):
+                        print("Found " + str(numUvs) + " wedge texture coordinates.")
+                except:
+                    print("Found " + str(numUvs) + " wedge texture coordinates.")
+
+            if (numUvs > 0):
+                ms.transfer_texture_to_color_per_vertex(sourcemesh=0, targetmesh=0)
+
+        if (mesh.edge_number() == 0 and mesh.face_number() == 0): # It's a point cloud
+            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True) # exactnumflag=True 
+        else: # It's a mesh              
+            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False) # exactnumflag=True
+        
+        ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+        
         ms.save_current_mesh(changeExtension(urls[i], ".ply", "_resampled"), save_vertex_color=True)
         
         vertexPositions = ms.current_mesh().vertex_matrix()
@@ -280,7 +303,7 @@ def main(debug=False):
     print(cmd)
 
     os.system(cmd)
-	'''
+    '''
 
     # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 17 -preset slow -r 30 output.mp4
     os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r 30 " + outputPath + "/output.mp4")
