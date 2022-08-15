@@ -23,8 +23,14 @@ def fract(x):
 def mix(x, y, a):
     return x * (1.0 - a) + y * a 
 
-def remap(value, min1, max1, min2, max2):
-    return np.interp(value, [min1, max1], [min2, max2])
+def remap(value, min1, max1, min2, max2, useNp=True):
+    if (useNp == False):
+        range1 = max1 - min1
+        range2 = max2 - min2
+        valueScaled = float(value - min1) / float(range1)
+        return min2 + (valueScaled * range2)
+    else:
+        return np.interp(value, [min1, max1], [min2, max2])
 
 def changeExtension(_url, _newExt, _append=None):
     returns = ""
@@ -88,7 +94,7 @@ def main(debug=False):
 
     dim = 1024
     hdim = int(dim / 2)
-    tileDim = int(dim / 16)
+    tileDim = int(dim / 8)
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
