@@ -86,18 +86,19 @@ def main(debug=False):
     inputPath = argv[0] 
     outputPath = argv[1] 
    
-    seqMinX = 0
-    seqMaxX = 0
-    seqMinY = 0
-    seqMaxY = 0
-    seqMinZ = 0
-    seqMaxZ = 0
+    seqMinX = 0.0
+    seqMaxX = 0.0
+    seqMinY = 0.0
+    seqMaxY = 0.0
+    seqMinZ = 0.0
+    seqMaxZ = 0.0
     localDims = []
     localNorms = []
 
     dim = 1024
     hdim = int(dim / 2)
-    tileDim = int(dim / 8)
+    tileDim = int(dim / 8) # 16
+    isMesh = False
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
@@ -131,12 +132,12 @@ def main(debug=False):
     for i in range(0, len(urls)):  
         print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
 
-        minX = 0
-        maxX = 0
-        minY = 0
-        maxY = 0
-        minZ = 0
-        maxZ = 0
+        minX = 0.0
+        maxX = 0.0
+        minY = 0.0
+        maxY = 0.0
+        minZ = 0.0
+        maxZ = 0.0
 
         ms = ml.MeshSet()
         ms.load_new_mesh(urls[i])
@@ -165,9 +166,11 @@ def main(debug=False):
             if (numUvs > 0):
                 ms.transfer_texture_to_color_per_vertex(sourcemesh=0, targetmesh=0)
 
-        if (mesh.edge_number() == 0 and mesh.face_number() == 0): # It's a point cloud
+        if (mesh.edge_number() == 0 and mesh.face_number() == 0):
+            isMesh = False # It's a point cloud             
             ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True) # exactnumflag=True 
-        else: # It's a mesh              
+        else:
+            isMesh = True # It's a mesh            
             ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False) # exactnumflag=True
         
         ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
@@ -213,12 +216,27 @@ def main(debug=False):
         counter += 1
     
     for localDim in localDims:
-        normMinX = remap(localDim[0], seqMinX, seqMaxX, 0, 1)
-        normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0, 1)
-        normMinY = remap(localDim[2], seqMinY, seqMaxY, 0, 1)
-        normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0, 1)
-        normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0, 1)
-        normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0, 1)
+        normMinX = 0.0
+        normMaxX = 0.0
+        normMinY = 0.0
+        normMaxY = 0.0
+        normMinZ = 0.0
+        normMaxZ = 0.0
+
+        if (isMesh == True):
+            normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 0.5)
+            normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 0.5)
+            normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 1.0)
+            normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 1.0)
+            normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0.0, 0.5)
+            normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0.0, 0.5)
+        else:
+            normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 1.0)
+            normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 1.0)
+            normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 1.0)
+            normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 1.0)
+            normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0.0, 1.0)
+            normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0.0, 1.0)
 
         localNorm = (normMinX, normMaxX, normMinY, normMaxY, normMinZ, normMaxZ)
         localNorms.append(localNorm)
