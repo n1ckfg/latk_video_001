@@ -233,8 +233,8 @@ def main(debug=False):
         else:
             normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 1.0)
             normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 1.0)
-            normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 0.8)
-            normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 0.8)
+            normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 0.9)
+            normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 0.9)
             normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0.0, 1.0)
             normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0.0, 1.0)
 
