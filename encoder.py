@@ -168,10 +168,10 @@ def main(debug=False):
 
         if (mesh.edge_number() == 0 and mesh.face_number() == 0):
             isMesh = False # It's a point cloud             
-            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True) # exactnumflag=True 
         else:
             isMesh = True # It's a mesh            
-            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False) # exactnumflag=True
+        
+        ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
         
         ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
         
@@ -222,7 +222,7 @@ def main(debug=False):
         normMaxY = 0.0
         normMinZ = 0.0
         normMaxZ = 0.0
-
+        
         if (isMesh == True):
             normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 0.5)
             normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 0.5)
@@ -233,8 +233,8 @@ def main(debug=False):
         else:
             normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 1.0)
             normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 1.0)
-            normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 0.9)
-            normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 0.9)
+            normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 1.0)
+            normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 1.0)
             normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0.0, 1.0)
             normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0.0, 1.0)
 
