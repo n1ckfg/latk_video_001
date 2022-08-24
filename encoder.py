@@ -216,27 +216,12 @@ def main(debug=False):
         counter += 1
     
     for localDim in localDims:
-        normMinX = 0.0
-        normMaxX = 0.0
-        normMinY = 0.0
-        normMaxY = 0.0
-        normMinZ = 0.0
-        normMaxZ = 0.0
-        
-        if (isMesh == True):
-            normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 0.5)
-            normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 0.5)
-            normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 1.0)
-            normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 1.0)
-            normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0.0, 0.5)
-            normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0.0, 0.5)
-        else:
-            normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 1.0)
-            normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 1.0)
-            normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 1.0)
-            normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 1.0)
-            normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0.0, 1.0)
-            normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0.0, 1.0)
+        normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 1.0)
+        normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 1.0)
+        normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 1.0)
+        normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 1.0)
+        normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0.0, 1.0)
+        normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0.0, 1.0)
 
         localNorm = (normMinX, normMaxX, normMinY, normMaxY, normMinZ, normMaxZ)
         localNorms.append(localNorm)
@@ -280,9 +265,9 @@ def main(debug=False):
         for j, point in enumerate(points):
             color = (int(point.col[0] * 255.0), int(point.col[1] * 255.0), int(point.col[2] * 255.0))
 
-            x = remap(point.pos[0], localDims[i][0], localDims[i][1], localNorms[i][0], localNorms[i][1])
-            y = remap(point.pos[1], localDims[i][2], localDims[i][3], localNorms[i][2], localNorms[i][3])
-            z = remap(point.pos[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
+            x = remap(point.pos[0], seqMinX, seqMaxX, localNorms[i][0], localNorms[i][1])
+            y = remap(point.pos[1], seqMinY, seqMaxY, localNorms[i][2], localNorms[i][3])
+            z = remap(point.pos[2], seqMinZ, seqMaxZ, localNorms[i][4], localNorms[i][5])
 
             xResult = encoder(x)
             yResult = encoder(y)
