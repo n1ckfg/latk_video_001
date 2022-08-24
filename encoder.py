@@ -265,9 +265,9 @@ def main(debug=False):
         for j, point in enumerate(points):
             color = (int(point.col[0] * 255.0), int(point.col[1] * 255.0), int(point.col[2] * 255.0))
 
-            x = remap(point.pos[0], seqMinX, seqMaxX, localNorms[i][0], localNorms[i][1])
-            y = remap(point.pos[1], seqMinY, seqMaxY, localNorms[i][2], localNorms[i][3])
-            z = remap(point.pos[2], seqMinZ, seqMaxZ, localNorms[i][4], localNorms[i][5])
+            x = remap(point.pos[0], localDims[i][0], localDims[i][1], localNorms[i][0], localNorms[i][1])
+            y = remap(point.pos[1], localDims[i][2], localDims[i][3], localNorms[i][2], localNorms[i][3])
+            z = remap(point.pos[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
 
             xResult = encoder(x)
             yResult = encoder(y)
