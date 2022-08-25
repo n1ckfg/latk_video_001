@@ -86,14 +86,8 @@ def main(debug=False):
     inputPath = argv[0] 
     outputPath = argv[1] 
    
-    seqMinX = 0.0
-    seqMaxX = 0.0
-    seqMinY = 0.0
-    seqMaxY = 0.0
-    seqMinZ = 0.0
-    seqMaxZ = 0.0
-    localDims = []
-    localNorms = []
+    seqMin = 0.0
+    seqMax = 0.0
 
     dim = 1024
     hdim = int(dim / 2)
@@ -131,13 +125,6 @@ def main(debug=False):
 
     for i in range(0, len(urls)):  
         print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
-
-        minX = 0.0
-        maxX = 0.0
-        minY = 0.0
-        maxY = 0.0
-        minZ = 0.0
-        maxZ = 0.0
 
         ms = ml.MeshSet()
         ms.load_new_mesh(urls[i])
@@ -183,49 +170,22 @@ def main(debug=False):
             x = vert[0]
             y = vert[1]
             z = vert[2]
-            if (x < minX):
-                minX = x
-            if (x > maxX):
-                maxX = x
-            if (y < minY):
-                minY = y
-            if (y > maxY):
-                maxY = y
-            if (z < minZ):
-                minZ = z
-            if (z > maxZ):
-                maxZ = z
-
-        localDim = (minX, maxX, minY, maxY, minZ, maxZ)
-        localDims.append(localDim)
-
-        if (minX < seqMinX):
-            seqMinX = minX
-        if (maxX > seqMaxX):
-            seqMaxX = maxX
-        if (minY < seqMinY):
-            seqMinY = minY
-        if (maxY > seqMaxY):
-            seqMaxY = maxY
-        if (minZ < seqMinZ):
-            seqMinZ = minZ
-        if (maxZ > seqMaxZ):
-            seqMaxZ = maxZ
+            if (x < seqMin):
+                seqMin = x
+            if (x > seqMax):
+                seqMax = x
+            if (y < seqMin):
+                seqMin = y
+            if (y > seqMax):
+                seqMax = y
+            if (z < seqMin):
+                seqMin = z
+            if (z > seqMax):
+                seqMax = z
 
         print("Resampled frame " + str(counter+1))
         counter += 1
     
-    for localDim in localDims:
-        normMinX = remap(localDim[0], seqMinX, seqMaxX, 0.0, 1.0)
-        normMaxX = remap(localDim[1], seqMinX, seqMaxX, 0.0, 1.0)
-        normMinY = remap(localDim[2], seqMinY, seqMaxY, 0.0, 1.0)
-        normMaxY = remap(localDim[3], seqMinY, seqMaxY, 0.0, 1.0)
-        normMinZ = remap(localDim[4], seqMinZ, seqMaxZ, 0.0, 1.0)
-        normMaxZ = remap(localDim[5], seqMinZ, seqMaxZ, 0.0, 1.0)
-
-        localNorm = (normMinX, normMaxX, normMinY, normMaxY, normMinZ, normMaxZ)
-        localNorms.append(localNorm)
-
     # 2. Second pass, to convert the resampled point clouds to images
     urls = []
     counter = 0
@@ -265,9 +225,9 @@ def main(debug=False):
         for j, point in enumerate(points):
             color = (int(point.col[0] * 255.0), int(point.col[1] * 255.0), int(point.col[2] * 255.0))
 
-            x = remap(point.pos[0], localDims[i][0], localDims[i][1], localNorms[i][0], localNorms[i][1])
-            y = remap(point.pos[1], localDims[i][2], localDims[i][3], localNorms[i][2], localNorms[i][3])
-            z = remap(point.pos[2], localDims[i][4], localDims[i][5], localNorms[i][4], localNorms[i][5])
+            x = remap(point.pos[0], seqMin, seqMax, 0.0, 1.0)
+            y = remap(point.pos[1], seqMin, seqMax, 0.0, 1.0)
+            z = remap(point.pos[2], seqMin, seqMax, 0.0, 1.0)
 
             xResult = encoder(x)
             yResult = encoder(y)
