@@ -91,7 +91,7 @@ def main(debug=False):
 
     dim = 1024
     hdim = int(dim / 2)
-    tileDim = int(dim / 8) # 16
+    tileDim = int(dim / 16) # 16
     isMesh = False
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
