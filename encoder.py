@@ -93,14 +93,17 @@ def main(debug=False):
     inputPath = argv[0] 
     outputPath = argv[1] 
    
+    # * * * * * * * * * * * * *
+    dim = 1024
+    tileDim = int(dim / 16) # 16
+    numClusters = 8
+    sortByPosition = False
+    # * * * * * * * * * * * * *
+
     seqMin = 0.0
     seqMax = 0.0
-
-    dim = 1024
-    hdim = int(dim / 2)
-    tileDim = int(dim / 16) # 16
-    numClusters = 4
     isMesh = False
+    hdim = int(dim / 2)
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
@@ -224,8 +227,10 @@ def main(debug=False):
                     points.append(PointData(pos, col))
         else:
             kmeans = KMeans(n_clusters=numClusters)
-            #clusterData = kmeans.fit(vertexPositions) # sort by distance
-            clusterData = kmeans.fit(vertexColors) # sort by color
+            if (sortByPosition == True):
+                kmeans.fit(vertexPositions)
+            else:
+                kmeans.fit(vertexColors) # sort by color
            
             clusters = []
             for j in range(0, numClusters):
