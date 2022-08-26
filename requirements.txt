@@ -1,3 +1,4 @@
 pymeshlab
 pillow
 numpy
+sklearn

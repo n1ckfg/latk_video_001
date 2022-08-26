@@ -6,6 +6,13 @@ import numpy as np
 import PIL.ImageDraw as ImageDraw
 import PIL.Image as Image
 import colorsys
+from sklearn.cluster import KMeans
+
+class Cluster(object):
+    def __init__(self):
+        self.points = []
+        self.colors = []
+        self.indices = []
 
 class PointData(object):
     def __init__(self, _pos, _col):
@@ -92,6 +99,7 @@ def main(debug=False):
     dim = 1024
     hdim = int(dim / 2)
     tileDim = int(dim / 16) # 16
+    numClusters = 4
     isMesh = False
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
@@ -207,11 +215,33 @@ def main(debug=False):
         vertexColors = ms.current_mesh().vertex_color_matrix()
         vertexPositions = ms.current_mesh().vertex_matrix()
         points = []
-        for j in range(0, len(vertexPositions)):
-            pos = vertexPositions[j]
-            col = vertexColors[j]
-            if (len(pos) == 3 and len(col) == 4):
-                points.append(PointData(pos, col))
+
+        if (numClusters < 2): # no kmeans sort            
+            for j in range(0, len(vertexPositions)):
+                pos = vertexPositions[j]
+                col = vertexColors[j]
+                if (len(pos) == 3 and len(col) == 4):
+                    points.append(PointData(pos, col))
+        else:
+            kmeans = KMeans(n_clusters=numClusters)
+            #clusterData = kmeans.fit(vertexPositions) # sort by distance
+            clusterData = kmeans.fit(vertexColors) # sort by color
+           
+            clusters = []
+            for j in range(0, numClusters):
+                clusters.append(Cluster())
+
+            for j, label in enumerate(kmeans.labels_):
+                clusters[label].points.append(vertexPositions[j])
+                clusters[label].colors.append(vertexColors[j])
+                clusters[label].indices.append(j)
+
+            for cluster in clusters:
+                for j, point in enumerate(cluster.points):
+                    pos = cluster.points[j]
+                    col = cluster.colors[j]
+                    if (len(pos) == 3 and len(col) == 4):
+                        points.append(PointData(pos, col))
 
         imgRgb = Image.new("RGB", (tileDim, tileDim))
         imgRgbPixels = imgRgb.load()
