@@ -96,8 +96,8 @@ def main(debug=False):
     # * * * * * * * * * * * * *
     dim = 1024
     tileDim = int(dim / 16) # 16
-    numClusters = 8
-    sortByPosition = False
+    numClusters = 512
+    sortByPosition = True
     # * * * * * * * * * * * * *
 
     seqMin = 0.0
