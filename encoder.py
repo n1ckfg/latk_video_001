@@ -7,6 +7,7 @@ import PIL.ImageDraw as ImageDraw
 import PIL.Image as Image
 import colorsys
 from sklearn.cluster import KMeans
+import math
 
 class Cluster(object):
     def __init__(self):
@@ -112,7 +113,7 @@ def main(debug=False):
     seqMax = 0.0
     isMesh = False
     hdim = int(dim / 2)
-    kdim = int(dim / tileDetail)
+    kdim = int(tileDim / tileDetail)
     numClusters = int(tileDetail * tileDetail)
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
@@ -261,10 +262,17 @@ def main(debug=False):
                 clusters[label].colors.append(vertexColors[j])
                 clusters[label].indices.append(j)
 
-            for k, cluster in enumerate(clusters):
-                for j in range(0, len(cluster.points)):
-                    col, pos = encodePoint(cluster.colors[j], cluster.points[j], seqMin, seqMax)
-                    kx, ky = xyFromLoc((k * kdim) + j, tileDim)
+            # https://discourse.processing.org/t/linear-array-of-values-to-grid/14206/3
+            stride = math.sqrt(len(clusters))
+            for j, cluster in enumerate(clusters):
+                jx = math.floor(j % stride)
+                jy = math.floor(j / stride)
+                
+                for k in range(0, len(cluster.points)):
+                    col, pos = encodePoint(cluster.colors[k], cluster.points[k], seqMin, seqMax)
+                    kx, ky = xyFromLoc(k, kdim)
+                    kx += (jx * kdim)
+                    ky += (jy * kdim)
                     imgRgbPixels[kx, ky] = col
                     imgXPixels[kx, ky] = pos[0]
                     imgYPixels[kx, ky] = pos[1]
