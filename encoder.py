@@ -14,11 +14,6 @@ class Cluster(object):
         self.colors = []
         self.indices = []
 
-class PointData(object):
-    def __init__(self, _pos, _col):
-        self.pos = _pos
-        self.col = _col
-
 def clamp(n, min_n, max_n):
     return max(min(max_n, n), min_n)
 
@@ -86,6 +81,19 @@ def encoder(depth, debug=False):
             return 0
     return colorFloatToColorInt(result)
 
+def encodePoint(col, pos, seqMin=0.0, seqMax=1.0):
+    color = (int(col[0] * 255.0), int(col[1] * 255.0), int(col[2] * 255.0))
+
+    x = remap(pos[0], seqMin, seqMax, 0.0, 1.0)
+    y = remap(pos[1], seqMin, seqMax, 0.0, 1.0)
+    z = remap(pos[2], seqMin, seqMax, 0.0, 1.0)
+
+    xResult = encoder(x)
+    yResult = encoder(y)
+    zResult = encoder(z)
+
+    return color, (xResult, yResult, zResult)
+
 def main(debug=False):
     argv = sys.argv
     argv = argv[argv.index("--") + 1:] # get all args after "--"
@@ -96,14 +104,16 @@ def main(debug=False):
     # * * * * * * * * * * * * *
     dim = 1024
     tileDim = int(dim / 16) # 16
-    numClusters = 512
+    tileDetail = 4
     sortByPosition = True
     # * * * * * * * * * * * * *
-
+    
     seqMin = 0.0
     seqMax = 0.0
     isMesh = False
     hdim = int(dim / 2)
+    kdim = int(dim / tileDetail)
+    numClusters = int(tileDetail * tileDetail)
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
@@ -217,36 +227,7 @@ def main(debug=False):
        
         vertexColors = ms.current_mesh().vertex_color_matrix()
         vertexPositions = ms.current_mesh().vertex_matrix()
-        points = []
-
-        if (numClusters < 2): # no kmeans sort            
-            for j in range(0, len(vertexPositions)):
-                pos = vertexPositions[j]
-                col = vertexColors[j]
-                if (len(pos) == 3 and len(col) == 4):
-                    points.append(PointData(pos, col))
-        else:
-            kmeans = KMeans(n_clusters=numClusters)
-            if (sortByPosition == True):
-                kmeans.fit(vertexPositions)
-            else:
-                kmeans.fit(vertexColors) # sort by color
-           
-            clusters = []
-            for j in range(0, numClusters):
-                clusters.append(Cluster())
-
-            for j, label in enumerate(kmeans.labels_):
-                clusters[label].points.append(vertexPositions[j])
-                clusters[label].colors.append(vertexColors[j])
-                clusters[label].indices.append(j)
-
-            for cluster in clusters:
-                for j, point in enumerate(cluster.points):
-                    pos = cluster.points[j]
-                    col = cluster.colors[j]
-                    if (len(pos) == 3 and len(col) == 4):
-                        points.append(PointData(pos, col))
+        clusters = []
 
         imgRgb = Image.new("RGB", (tileDim, tileDim))
         imgRgbPixels = imgRgb.load()
@@ -257,23 +238,38 @@ def main(debug=False):
         imgZ = Image.new("RGB", (tileDim, tileDim))
         imgZPixels = imgZ.load()
 
-        for j, point in enumerate(points):
-            color = (int(point.col[0] * 255.0), int(point.col[1] * 255.0), int(point.col[2] * 255.0))
-
-            x = remap(point.pos[0], seqMin, seqMax, 0.0, 1.0)
-            y = remap(point.pos[1], seqMin, seqMax, 0.0, 1.0)
-            z = remap(point.pos[2], seqMin, seqMax, 0.0, 1.0)
-
-            xResult = encoder(x)
-            yResult = encoder(y)
-            zResult = encoder(z)
-
-            if (xResult != 0 and yResult != 0 and zResult != 0):
+        if (numClusters < 2): # no kmeans sort    
+            for j in range(0, len(vertexPositions)):
+                col, pos = encodePoint(vertexColors[j], vertexPositions[j], seqMin, seqMax)
                 jx, jy = xyFromLoc(j, tileDim)
-                imgRgbPixels[jx, jy] = color
-                imgXPixels[jx, jy] = xResult
-                imgYPixels[jx, jy] = yResult
-                imgZPixels[jx, jy] = zResult
+                imgRgbPixels[jx, jy] = col
+                imgXPixels[jx, jy] = pos[0]
+                imgYPixels[jx, jy] = pos[1]
+                imgZPixels[jx, jy] = pos[2]
+        else:
+            kmeans = KMeans(n_clusters=numClusters)
+            if (sortByPosition == True):
+                kmeans.fit(vertexPositions)
+            else:
+                kmeans.fit(vertexColors) # sort by color
+           
+            for j in range(0, numClusters):
+                clusters.append(Cluster())
+
+            for j, label in enumerate(kmeans.labels_):
+                clusters[label].points.append(vertexPositions[j])
+                clusters[label].colors.append(vertexColors[j])
+                clusters[label].indices.append(j)
+
+            for k, cluster in enumerate(clusters):
+                for j in range(0, len(cluster.points)):
+                    print(str(k) + ", " + str(j))
+                    col, pos = encodePoint(cluster.colors[j], cluster.points[j], seqMin, seqMax)
+                    jx, jy = xyFromLoc((k * kdim) + j, tileDim)
+                    imgRgbPixels[jx, jy] = col
+                    imgXPixels[jx, jy] = pos[0]
+                    imgYPixels[jx, jy] = pos[1]
+                    imgZPixels[jx, jy] = pos[2]
 
         imgFinal = Image.new("RGB", (dim, dim))
 
