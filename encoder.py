@@ -263,13 +263,12 @@ def main(debug=False):
 
             for k, cluster in enumerate(clusters):
                 for j in range(0, len(cluster.points)):
-                    print(str(k) + ", " + str(j))
                     col, pos = encodePoint(cluster.colors[j], cluster.points[j], seqMin, seqMax)
-                    jx, jy = xyFromLoc((k * kdim) + j, tileDim)
-                    imgRgbPixels[jx, jy] = col
-                    imgXPixels[jx, jy] = pos[0]
-                    imgYPixels[jx, jy] = pos[1]
-                    imgZPixels[jx, jy] = pos[2]
+                    kx, ky = xyFromLoc((k * kdim) + j, tileDim)
+                    imgRgbPixels[kx, ky] = col
+                    imgXPixels[kx, ky] = pos[0]
+                    imgYPixels[kx, ky] = pos[1]
+                    imgZPixels[kx, ky] = pos[2]
 
         imgFinal = Image.new("RGB", (dim, dim))
 
