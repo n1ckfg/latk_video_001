@@ -85,7 +85,7 @@
 
 			    if (visibility == 0.0) discard;
 
-			    gl_FragColor = vec4(saturation(col.xyz, 1.2), 0.5);
+			    gl_FragColor = vec4(saturation(col.xyz, 1.2), 1.0);
 			}
     	</script>
 	</head>
@@ -146,7 +146,7 @@
 							value: texture
 						}
 					},
-					transparent: true,
+					transparent: false, //true,
 			        vertexShader: document.getElementById("vertexShader").textContent,
 			        fragmentShader: document.getElementById("fragmentShader").textContent
 			    });

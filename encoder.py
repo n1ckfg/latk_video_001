@@ -5,6 +5,7 @@ import pymeshlab as ml
 import numpy as np
 import PIL.ImageDraw as ImageDraw
 import PIL.Image as Image
+import PIL.ImageFilter as ImageFilter
 import colorsys
 from sklearn.cluster import KMeans
 import math
@@ -104,8 +105,8 @@ def main(debug=False):
    
     # * * * * * * * * * * * * *
     dim = 1024
-    tileDim = int(dim / 16) # 16
-    tileDetail = 4
+    tileDim = int(dim / 8) # 16
+    tileDetail = 8
     sortByPosition = True
     # * * * * * * * * * * * * *
     
@@ -284,6 +285,15 @@ def main(debug=False):
         imgX = imgX.resize((hdim, hdim), 0)
         imgY = imgY.resize((hdim, hdim), 0)
         imgZ = imgZ.resize((hdim, hdim), 0)
+
+        # https://www.tutorialspoint.com/python_pillow/python_pillow_blur_an_image.htm
+        '''
+        blurVal = 1
+        imgRgb = imgRgb.filter(ImageFilter.BoxBlur(blurVal))
+        imgX = imgX.filter(ImageFilter.BoxBlur(blurVal))
+        imgY = imgY.filter(ImageFilter.BoxBlur(blurVal))
+        imgZ = imgZ.filter(ImageFilter.BoxBlur(blurVal))
+		'''
 
         imgFinal.paste(imgRgb, (0, 0))
         imgFinal.paste(imgX, (hdim, 0))
