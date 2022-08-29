@@ -29,11 +29,11 @@
 			uniform sampler2D tex;	
 
 			// * * * * * * * * * * * * * * * * *
-			const float satThresh = 0.6; 		// orig 0.5 or 0.85
-            const float brightThresh = 0.6; 	// orig 0.5 or 0.85 or 0.9
+			const float satThresh = 0.5; 		// orig 0.5 or 0.85
+            const float brightThresh = 0.5; 	// orig 0.5 or 0.85 or 0.9
 			const float epsilon = 0.03; // orig 1.0e-10 or 0.0000000001 or orig 0.03
-			const vec2 meshDensity = vec2(512.0, 512.0);
-			const float visibilityThreshold = 0.98;
+			const vec2 meshDensity = vec2(2048.0, 2048.0);
+			const float visibilityThreshold = 0.99;
 			// * * * * * * * * * * * * * * * * *
 
             float rgbToHue(vec3 c) {
