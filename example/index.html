@@ -29,9 +29,11 @@
 			uniform sampler2D tex;	
 
 			// * * * * * * * * * * * * * * * * *
-			const float satThresh = 0.85; 		// orig 0.5
-            const float brightThresh = 0.85; 	// orig 0.5 or 0.9
-			const float epsilon = 1.0e-10; 		// 0.0000000001 // orig 0.03
+			const float satThresh = 0.6; 		// orig 0.5 or 0.85
+            const float brightThresh = 0.6; 	// orig 0.5 or 0.85 or 0.9
+			const float epsilon = 0.03; // orig 1.0e-10 or 0.0000000001 or orig 0.03
+			const vec2 meshDensity = vec2(512.0, 512.0);
+			const float visibilityThreshold = 0.98;
 			// * * * * * * * * * * * * * * * * *
 
             float rgbToHue(vec3 c) {
@@ -45,7 +47,63 @@
                 
                 return result.g > satThresh && result.b > brightThresh ? result.r : 0.0;
             }
-     
+     		
+     		float depthForPoint(vec2 uv) {
+     			return rgbToHue(texture2D(tex, uv).rgb);
+     		}
+
+     		float calculateVisibility(float depth, vec2 uv) {
+     			float visibility = 1.0;
+	    	    vec2 textureStep = 1.0 / meshDensity;
+     		    float neighborDepths[8];
+    			neighborDepths[0] = depthForPoint(uv + vec2(0.0,  textureStep.y));
+    			neighborDepths[1] = depthForPoint(uv + vec2(textureStep.x, 0.0));
+    			neighborDepths[2] = depthForPoint(uv + vec2(0.0, -textureStep.y));
+    			neighborDepths[3] = depthForPoint(uv + vec2(-textureStep.x, 0.0));
+    			neighborDepths[4] = depthForPoint(uv + vec2(-textureStep.x, -textureStep.y));
+    			neighborDepths[5] = depthForPoint(uv + vec2(textureStep.x,  textureStep.y));
+    			neighborDepths[6] = depthForPoint(uv + vec2(textureStep.x, -textureStep.y));
+    			neighborDepths[7] = depthForPoint(uv + vec2(-textureStep.x,  textureStep.y));
+
+			    //search neighbor verts in order to see if we are near an edge
+			    //if so, clamp to the surface closest to us
+			    int numDudNeighbors = 0;
+			    if (depth < epsilon || (1.0 - depth) < epsilon) {
+			        // float depthDif = 1.0;
+			        float nearestDepth = 1.0;
+			        for (int i=0; i<8; i++) {
+			            float depthNeighbor = neighborDepths[i];
+			            if (depthNeighbor >= epsilon && (1.0 - depthNeighbor) > epsilon) {
+			                if (depthNeighbor < nearestDepth) {
+			                    nearestDepth = depthNeighbor;
+			                }
+			            } else {
+			                numDudNeighbors++;
+			            }
+			        }
+
+			        depth = nearestDepth;
+			        visibility = 0.8;
+
+			        // blob filter
+			        if (numDudNeighbors > 6) {
+			            visibility = 0.0;
+			        }
+			    }
+
+			    // internal edge filter
+			    float maxDisparity = 0.0;
+			    for (int i=0; i<8; i++) {
+			        float depthNeighbor = neighborDepths[i];
+			        if (depthNeighbor >= epsilon && (1.0 - depthNeighbor) > epsilon) {
+			            maxDisparity = max(maxDisparity, abs(depth - depthNeighbor));
+			        }
+			    }
+
+			    visibility *= 1.0 - maxDisparity;
+			    return visibility;
+	     	}
+
 			void main() {
 			    gl_PointSize = 4.0;
 			    
@@ -54,11 +112,14 @@
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
 			    vec2 uvZ = vec2(uv.x * 0.5, uv.y * 0.5);
 
-			    float posX = rgbToHue(texture2D(tex, uvX).rgb);
-			    float posY = rgbToHue(texture2D(tex, uvY).rgb);
-			    float posZ = rgbToHue(texture2D(tex, uvZ).rgb);	    
+			    float posX = depthForPoint(uvX);
+			    float posY = depthForPoint(uvY);
+			    float posZ = depthForPoint(uvZ);	    
 	    	
-	    		visibility = posX == 0.0 || posY == 0.0 || posZ == 0.0 ? 0.0 : 1.0;
+	    		float visX = calculateVisibility(posX, uvX);
+	    		float visY = calculateVisibility(posY, uvY);
+	    		float visZ = calculateVisibility(posZ, uvZ);
+	    		visibility = visX < visibilityThreshold || visY < visibilityThreshold || visZ < visibilityThreshold ? 0.0 : 1.0;
 
 			    vec3 newPosition = vec3(posX, posY, posZ);
 
@@ -83,7 +144,7 @@
 			    vec2 uvRgb = vec2(vUv.x * 0.5, 0.5 + vUv.y * 0.5);
 			    vec4 col = texture2D(tex, uvRgb);
 
-			    if (visibility == 0.0) discard;
+			    if (visibility < 0.9) discard;
 
 			    gl_FragColor = vec4(saturation(col.xyz, 1.2), 1.0);
 			}
