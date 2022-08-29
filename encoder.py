@@ -100,22 +100,22 @@ def main(debug=False):
     argv = sys.argv
     argv = argv[argv.index("--") + 1:] # get all args after "--"
 
+    # * * * * * * * * * * * * *
     inputPath = argv[0] 
     outputPath = argv[1] 
-   
+    dim = int(argv[2]) # 1024
+    tilePixelSize = int(argv[3]) # 16
+    tileSubdiv = int(argv[4]) # 16
     # * * * * * * * * * * * * *
-    dim = 1024
-    tileDim = int(dim / 8) # 16
-    tileDetail = 8
-    sortByPosition = True
-    # * * * * * * * * * * * * *
-    
+
+    tileDim = int(dim / tilePixelSize) 
+    sortByPosition = True   
     seqMin = 0.0
     seqMax = 0.0
     isMesh = False
-    hdim = int(dim / 2)
-    kdim = int(tileDim / tileDetail)
-    numClusters = int(tileDetail * tileDetail)
+    halfDim = int(dim / 2)
+    kmeansDim = int(tileDim / tileSubdiv)
+    numClusters = int(tileSubdiv * tileSubdiv)
 
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
@@ -271,9 +271,9 @@ def main(debug=False):
                 
                 for k in range(0, len(cluster.points)):
                     col, pos = encodePoint(cluster.colors[k], cluster.points[k], seqMin, seqMax)
-                    kx, ky = xyFromLoc(k, kdim)
-                    kx += (jx * kdim)
-                    ky += (jy * kdim)
+                    kx, ky = xyFromLoc(k, kmeansDim)
+                    kx += (jx * kmeansDim)
+                    ky += (jy * kmeansDim)
                     imgRgbPixels[kx, ky] = col
                     imgXPixels[kx, ky] = pos[0]
                     imgYPixels[kx, ky] = pos[1]
@@ -281,10 +281,10 @@ def main(debug=False):
 
         imgFinal = Image.new("RGB", (dim, dim))
 
-        imgRgb = imgRgb.resize((hdim, hdim), 0)
-        imgX = imgX.resize((hdim, hdim), 0)
-        imgY = imgY.resize((hdim, hdim), 0)
-        imgZ = imgZ.resize((hdim, hdim), 0)
+        imgRgb = imgRgb.resize((halfDim, halfDim), 0)
+        imgX = imgX.resize((halfDim, halfDim), 0)
+        imgY = imgY.resize((halfDim, halfDim), 0)
+        imgZ = imgZ.resize((halfDim, halfDim), 0)
 
         # https://www.tutorialspoint.com/python_pillow/python_pillow_blur_an_image.htm
         '''
@@ -296,9 +296,9 @@ def main(debug=False):
 		'''
 
         imgFinal.paste(imgRgb, (0, 0))
-        imgFinal.paste(imgX, (hdim, 0))
-        imgFinal.paste(imgY, (hdim, hdim))      
-        imgFinal.paste(imgZ, (0, hdim))
+        imgFinal.paste(imgX, (halfDim, 0))
+        imgFinal.paste(imgY, (halfDim, halfDim))      
+        imgFinal.paste(imgZ, (0, halfDim))
         
         imgFinal.save(outputPath + "/output" + str(i) + ".png")
 

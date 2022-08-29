@@ -1,8 +1,12 @@
 INPUT_PATH=input
 OUTPUT_PATH=output
+DIM=1024
+TILE_PIXEL_SIZE=16
+TILE_SUBDIV=16
 
 rm $INPUT_PATH/*_resampled.ply
 rm -rf $OUTPUT_PATH
 mkdir $OUTPUT_PATH
-python encoder.py -- $INPUT_PATH $OUTPUT_PATH
+python encoder.py -- $INPUT_PATH $OUTPUT_PATH $DIM $TILE_PIXEL_SIZE $TILE_SUBDIV
+
 
