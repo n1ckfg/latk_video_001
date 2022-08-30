@@ -2,3 +2,5 @@ pymeshlab
 pillow
 numpy
 sklearn
+latk
+

@@ -9,6 +9,7 @@ import PIL.ImageFilter as ImageFilter
 import colorsys
 from sklearn.cluster import KMeans
 import math
+import latk
 
 class Cluster(object):
     def __init__(self):
@@ -181,9 +182,16 @@ def main(debug=False):
         else:
             isMesh = True # It's a mesh            
         
-        ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
-        
-        ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+        #ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
+        if (newSampleNum >= mesh.vertex_number()):
+            if (mesh.edge_number() == 0 and mesh.face_number() == 0):
+                ms.generate_surface_reconstruction_ball_pivoting()
+            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False)
+            ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+        else:
+            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True)
+
+        #ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
         
         ms.save_current_mesh(changeExtension(urls[i], ".ply", "_resampled"), save_vertex_color=True)
         
