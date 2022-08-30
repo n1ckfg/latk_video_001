@@ -114,6 +114,7 @@ def main(debug=False):
     seqMin = 0.0
     seqMax = 0.0
     isMesh = False
+    useNewResampleMethod = True
     halfDim = int(dim / 2)
     kmeansDim = int(tileDim / tileSubdiv)
     numClusters = int(tileSubdiv * tileSubdiv)
@@ -182,16 +183,17 @@ def main(debug=False):
         else:
             isMesh = True # It's a mesh            
         
-        #ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
-        if (newSampleNum >= mesh.vertex_number()):
-            if (mesh.edge_number() == 0 and mesh.face_number() == 0):
-                ms.generate_surface_reconstruction_ball_pivoting()
-            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False)
+        if (useNewResampleMethod == True):
+            ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
             ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
         else:
-            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True)
-
-        #ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+            if (newSampleNum >= mesh.vertex_number()):
+                if (mesh.edge_number() == 0 and mesh.face_number() == 0):
+                    ms.generate_surface_reconstruction_ball_pivoting()
+                ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False)
+                ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+            else:
+                ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True)
         
         ms.save_current_mesh(changeExtension(urls[i], ".ply", "_resampled"), save_vertex_color=True)
         
@@ -301,7 +303,7 @@ def main(debug=False):
         imgX = imgX.filter(ImageFilter.BoxBlur(blurVal))
         imgY = imgY.filter(ImageFilter.BoxBlur(blurVal))
         imgZ = imgZ.filter(ImageFilter.BoxBlur(blurVal))
-		'''
+        '''
 
         imgFinal.paste(imgRgb, (0, 0))
         imgFinal.paste(imgX, (halfDim, 0))
