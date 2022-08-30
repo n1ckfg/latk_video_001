@@ -16,9 +16,13 @@ class Cluster(object):
         self.points = []
         self.colors = []
         self.indices = []
+        self.centroid = (0.0,0.0,0.0)
 
 def clamp(n, min_n, max_n):
     return max(min(max_n, n), min_n)
+
+def zeroPadding(val, maxVal):
+    return str(val).zfill(len(str(maxVal)))
 
 def xyFromLoc(loc, width):
     x = loc % width
@@ -39,6 +43,25 @@ def remap(value, min1, max1, min2, max2, useNp=True):
         return min2 + (valueScaled * range2)
     else:
         return np.interp(value, [min1, max1], [min2, max2])
+
+def lerp(a, b, f): 
+    return (a * (1.0 - f)) + (b * f)
+
+def lerp3d(a, b, f):
+    x = (a[0] * (1.0 - f)) + (b[0] * f)   
+    y = (a[1] * (1.0 - f)) + (b[1] * f)   
+    z = (a[2] * (1.0 - f)) + (b[2] * f)   
+    return (x, y, z)
+
+def drawLine(drawReps, p1, p2):
+    returns = []
+
+    for i in range(0, drawReps):
+        val = float(i) / float(drawReps) 
+        p3 = lerp3d(p1, p2, val)      
+        returns.append(p3)
+
+    return returns
 
 def changeExtension(_url, _newExt, _append=None):
     returns = ""
@@ -110,10 +133,11 @@ def main(debug=False):
     # * * * * * * * * * * * * *
 
     tileDim = int(dim / tilePixelSize) 
-    sortByPosition = True   
+    newSampleNum = tileDim * tileDim #mesh.vertex_number()
     seqMin = 0.0
     seqMax = 0.0
     isMesh = False
+    useNewResampleMethod = True
     halfDim = int(dim / 2)
     kmeansDim = int(tileDim / tileSubdiv)
     numClusters = int(tileSubdiv * tileSubdiv)
@@ -142,80 +166,166 @@ def main(debug=False):
     
     for fileName in os.listdir(inputPath):
         fileName = fileName.lower()
-        if fileName.endswith("obj") or fileName.endswith("ply"): 
+        if fileName.endswith("obj") or fileName.endswith("ply") or fileName.endswith("latk"): 
             url = os.path.abspath(os.path.join(inputPath, fileName))
             urls.append(url)
     urls.sort()
 
-    for i in range(0, len(urls)):  
-        print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
+    numLatks = 0
+    currentLatk = 0
+    for url in urls:
+        if (url.endswith("latk")):
+            numLatks += 1  
+    print ("Found " + str(numLatks) + " latk files.")
 
-        ms = ml.MeshSet()
-        ms.load_new_mesh(urls[i])
-        mesh = ms.current_mesh()
+    for i, url in enumerate(urls):  
+        if url.endswith("latk"):
+            print("\nGenerating meshes from latk " + str(currentLatk+1) + " / " + str(numLatks))
+            currentLatk += 1
+            # https://pymeshlab.readthedocs.io/en/0.1.9/tutorials/import_mesh_from_arrays.html
+            # https://numpy.org/doc/stable/reference/generated/numpy.asarray.html
 
-        newSampleNum = tileDim * tileDim #mesh.vertex_number()
-
-        if (mesh.edge_number() != 0 or mesh.face_number() != 0):
-            numUvs = 0
+            la = latk.Latk(url)
+            longestFrameCount = 0
+            counter = 0
             
-            try:
-                numUvs = len(ms.current_mesh().vertex_tex_coord_matrix())
-                if (numUvs > 0):
-                    print("Found " + str(numUvs) + " vertex texture coordinates.")
-            except:
-                print("Found " + str(numUvs) + " vertex texture coordinates.")
+            for layer in la.layers:
+                if len(layer.frames) > longestFrameCount:
+                    longestFrameCount = len(layer.frames)
+            print ("Longest layer frame count: " + str(longestFrameCount))
 
-            if (numUvs == 0):
+            for j in range(0, longestFrameCount):
+                allPoints = []
+                allColors = []
+                    
+                for layer in la.layers:
+                    index = j
+                    if (index > len(layer.frames) - 1):
+                        index = len(layer.frames) - 1
+
+                    frame = layer.frames[index]
+
+                    for stroke in frame.strokes:
+                        if (len(stroke.points) > 1):
+                            point = (stroke.points[0].co[0], stroke.points[0].co[2], stroke.points[0].co[1])
+                            allPoints.append(point)
+                            
+                            color = (stroke.color[0], stroke.color[1], stroke.color[2], 1.0)
+                            allColors.append(color)
+                            
+                            for i in range(1, len(stroke.points)):
+                                point = (stroke.points[i].co[0], stroke.points[i].co[2], stroke.points[i].co[1])
+                                allPoints.append(point)
+                                allColors.append(color)
+                                
+                                p1 = stroke.points[i].co
+                                p2 = stroke.points[i-1].co
+                                newPoints = drawLine(tileDim, p1, p2)
+                                for newPoint in newPoints:
+                                    allPoints.append((newPoint[0], newPoint[2], newPoint[1]))
+                                    allColors.append(color)
+
+                verts = np.asarray(allPoints)
+                colors = np.asarray(allColors)
+                
+                ms = ml.MeshSet()
+                newMesh = ml.Mesh(verts, v_color_matrix=colors)
+                ms.add_mesh(newMesh, "latk" + str(currentLatk))
+                
+                ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True        
+                ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+
+                ms.save_current_mesh(changeExtension(url, ".ply", "_" + zeroPadding(counter, longestFrameCount) + "_resampled"), save_vertex_color=True)
+                
+                vertexPositions = ms.current_mesh().vertex_matrix()
+
+                for vert in vertexPositions:
+                    x = vert[0]
+                    y = vert[1]
+                    z = vert[2]
+                    if (x < seqMin):
+                        seqMin = x
+                    if (x > seqMax):
+                        seqMax = x
+                    if (y < seqMin):
+                        seqMin = y
+                    if (y > seqMax):
+                        seqMax = y
+                    if (z < seqMin):
+                        seqMin = z
+                    if (z > seqMax):
+                        seqMax = z
+
+                print("Resampled Latk frame " + str(counter+1))
+                counter += 1
+        else:
+            print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
+            ms = ml.MeshSet()
+            ms.load_new_mesh(url)
+
+            mesh = ms.current_mesh()
+
+            if (mesh.edge_number() != 0 or mesh.face_number() != 0):
+                numUvs = 0
+                
                 try:
-                    numUvs = len(ms.current_mesh().wedge_tex_coord_matrix())
+                    numUvs = len(ms.current_mesh().vertex_tex_coord_matrix())
                     if (numUvs > 0):
-                        print("Found " + str(numUvs) + " wedge texture coordinates.")
+                        print("Found " + str(numUvs) + " vertex texture coordinates.")
                 except:
-                    print("Found " + str(numUvs) + " wedge texture coordinates.")
+                    print("Found " + str(numUvs) + " vertex texture coordinates.")
 
-            if (numUvs > 0):
-                ms.transfer_texture_to_color_per_vertex(sourcemesh=0, targetmesh=0)
+                if (numUvs == 0):
+                    try:
+                        numUvs = len(ms.current_mesh().wedge_tex_coord_matrix())
+                        if (numUvs > 0):
+                            print("Found " + str(numUvs) + " wedge texture coordinates.")
+                    except:
+                        print("Found " + str(numUvs) + " wedge texture coordinates.")
 
-        if (mesh.edge_number() == 0 and mesh.face_number() == 0):
-            isMesh = False # It's a point cloud             
-        else:
-            isMesh = True # It's a mesh            
-        
-        #ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
-        if (newSampleNum >= mesh.vertex_number()):
+                if (numUvs > 0):
+                    ms.transfer_texture_to_color_per_vertex(sourcemesh=0, targetmesh=0)
+
             if (mesh.edge_number() == 0 and mesh.face_number() == 0):
-                ms.generate_surface_reconstruction_ball_pivoting()
-            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False)
-            ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
-        else:
-            ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True)
+                isMesh = False # It's a point cloud             
+            else:
+                isMesh = True # It's a mesh            
+            
+            if (useNewResampleMethod == True):
+                ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
+                ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+            else:
+                if (newSampleNum >= mesh.vertex_number()):
+                    if (isMesh == False):
+                        ms.generate_surface_reconstruction_ball_pivoting()
+                    ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False)
+                    ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+                else:
+                    ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True)
+            
+            ms.save_current_mesh(changeExtension(url, ".ply", "_resampled"), save_vertex_color=True)
+            
+            vertexPositions = ms.current_mesh().vertex_matrix()
 
-        #ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
-        
-        ms.save_current_mesh(changeExtension(urls[i], ".ply", "_resampled"), save_vertex_color=True)
-        
-        vertexPositions = ms.current_mesh().vertex_matrix()
+            for vert in vertexPositions:
+                x = vert[0]
+                y = vert[1]
+                z = vert[2]
+                if (x < seqMin):
+                    seqMin = x
+                if (x > seqMax):
+                    seqMax = x
+                if (y < seqMin):
+                    seqMin = y
+                if (y > seqMax):
+                    seqMax = y
+                if (z < seqMin):
+                    seqMin = z
+                if (z > seqMax):
+                    seqMax = z
 
-        for vert in vertexPositions:
-            x = vert[0]
-            y = vert[1]
-            z = vert[2]
-            if (x < seqMin):
-                seqMin = x
-            if (x > seqMax):
-                seqMax = x
-            if (y < seqMin):
-                seqMin = y
-            if (y > seqMax):
-                seqMax = y
-            if (z < seqMin):
-                seqMin = z
-            if (z > seqMax):
-                seqMax = z
-
-        print("Resampled frame " + str(counter+1))
-        counter += 1
+            print("Resampled frame " + str(counter+1))
+            counter += 1
     
     # 2. Second pass, to convert the resampled point clouds to images
     urls = []
@@ -228,11 +338,11 @@ def main(debug=False):
             urls.append(url)
     urls.sort()
 
-    for i in range(0, len(urls)):  
+    for i, url in enumerate(urls):  
         print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
 
         ms = ml.MeshSet()
-        ms.load_new_mesh(urls[i])
+        ms.load_new_mesh(url)
         mesh = ms.current_mesh()
        
         vertexColors = ms.current_mesh().vertex_color_matrix()
@@ -257,11 +367,11 @@ def main(debug=False):
                 imgYPixels[jx, jy] = pos[1]
                 imgZPixels[jx, jy] = pos[2]
         else:
-            kmeans = KMeans(n_clusters=numClusters)
-            if (sortByPosition == True):
-                kmeans.fit(vertexPositions)
-            else:
-                kmeans.fit(vertexColors) # sort by color
+            # https://scikit-learn.org/stable/modules/clustering.html
+            # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
+            kmeans = KMeans(n_clusters=numClusters, algorithm="auto") # "auto", "elkan"
+            kmeans.fit(vertexPositions)
+            #kmeans.fit(vertexColors) # sort by color
            
             for j in range(0, numClusters):
                 clusters.append(Cluster())
@@ -270,6 +380,12 @@ def main(debug=False):
                 clusters[label].points.append(vertexPositions[j])
                 clusters[label].colors.append(vertexColors[j])
                 clusters[label].indices.append(j)
+
+            for j, centroid in enumerate(kmeans.cluster_centers_):
+                clusters[j].centroid = centroid
+
+            # https://stackoverflow.com/questions/17555218/python-how-to-sort-a-list-of-lists-by-the-fourth-element-in-each-list
+            clusters.sort(key=lambda x: x.centroid.all())
 
             # https://discourse.processing.org/t/linear-array-of-values-to-grid/14206/3
             stride = math.sqrt(len(clusters))
@@ -301,7 +417,7 @@ def main(debug=False):
         imgX = imgX.filter(ImageFilter.BoxBlur(blurVal))
         imgY = imgY.filter(ImageFilter.BoxBlur(blurVal))
         imgZ = imgZ.filter(ImageFilter.BoxBlur(blurVal))
-		'''
+        '''
 
         imgFinal.paste(imgRgb, (0, 0))
         imgFinal.paste(imgX, (halfDim, 0))
