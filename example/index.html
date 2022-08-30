@@ -32,9 +32,13 @@
 			const float satThresh = 0.5; 		// orig 0.5 or 0.85
             const float brightThresh = 0.5; 	// orig 0.5 or 0.85 or 0.9
 			const float epsilon = 0.03; // orig 1.0e-10 or 0.0000000001 or orig 0.03
-			const vec2 meshDensity = vec2(2048.0, 2048.0);
 			const float visibilityThreshold = 0.99;
 			// * * * * * * * * * * * * * * * * *
+
+			const float meshDensityVal = 2048.0;
+			const vec2 meshDensity = vec2(meshDensityVal, meshDensityVal);
+			const int numNeighbors = 4; // orig 8
+			const int numDudNeighborsThreshold = int(float(numNeighbors) * 0.75);
 
             float rgbToHue(vec3 c) {
                 vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -55,23 +59,22 @@
      		float calculateVisibility(float depth, vec2 uv) {
      			float visibility = 1.0;
 	    	    vec2 textureStep = 1.0 / meshDensity;
-     		    float neighborDepths[8];
+     		    float neighborDepths[numNeighbors];
     			neighborDepths[0] = depthForPoint(uv + vec2(0.0,  textureStep.y));
     			neighborDepths[1] = depthForPoint(uv + vec2(textureStep.x, 0.0));
     			neighborDepths[2] = depthForPoint(uv + vec2(0.0, -textureStep.y));
     			neighborDepths[3] = depthForPoint(uv + vec2(-textureStep.x, 0.0));
-    			neighborDepths[4] = depthForPoint(uv + vec2(-textureStep.x, -textureStep.y));
-    			neighborDepths[5] = depthForPoint(uv + vec2(textureStep.x,  textureStep.y));
-    			neighborDepths[6] = depthForPoint(uv + vec2(textureStep.x, -textureStep.y));
-    			neighborDepths[7] = depthForPoint(uv + vec2(-textureStep.x,  textureStep.y));
+    			//neighborDepths[4] = depthForPoint(uv + vec2(-textureStep.x, -textureStep.y));
+    			//neighborDepths[5] = depthForPoint(uv + vec2(textureStep.x,  textureStep.y));
+    			//neighborDepths[6] = depthForPoint(uv + vec2(textureStep.x, -textureStep.y));
+    			//neighborDepths[7] = depthForPoint(uv + vec2(-textureStep.x,  textureStep.y));
 
-			    //search neighbor verts in order to see if we are near an edge
-			    //if so, clamp to the surface closest to us
+			    // Search neighbor verts in order to see if we are near an edge.
+			    // If so, clamp to the surface closest to us.
 			    int numDudNeighbors = 0;
 			    if (depth < epsilon || (1.0 - depth) < epsilon) {
-			        // float depthDif = 1.0;
 			        float nearestDepth = 1.0;
-			        for (int i=0; i<8; i++) {
+			        for (int i=0; i<numNeighbors; i++) {
 			            float depthNeighbor = neighborDepths[i];
 			            if (depthNeighbor >= epsilon && (1.0 - depthNeighbor) > epsilon) {
 			                if (depthNeighbor < nearestDepth) {
@@ -85,15 +88,16 @@
 			        depth = nearestDepth;
 			        visibility = 0.8;
 
-			        // blob filter
-			        if (numDudNeighbors > 6) {
+			        // Blob filter
+			        if (numDudNeighbors > numDudNeighborsThreshold) {
 			            visibility = 0.0;
 			        }
 			    }
 
-			    // internal edge filter
+			    // Internal edge filter
 			    float maxDisparity = 0.0;
-			    for (int i=0; i<8; i++) {
+
+			    for (int i=0; i<numNeighbors; i++) {
 			        float depthNeighbor = neighborDepths[i];
 			        if (depthNeighbor >= epsilon && (1.0 - depthNeighbor) > epsilon) {
 			            maxDisparity = max(maxDisparity, abs(depth - depthNeighbor));
@@ -101,12 +105,13 @@
 			    }
 
 			    visibility *= 1.0 - maxDisparity;
+
 			    return visibility;
 	     	}
 
 			void main() {
-			    gl_PointSize = 4.0;
-			    
+			    gl_PointSize = 6.0;
+
 			    vUv = uv;
 			    vec2 uvX = vec2(0.5 + uv.x * 0.5, 0.5 + uv.y * 0.5);
 			    vec2 uvY = vec2(0.5 + uv.x * 0.5, uv.y * 0.5);
@@ -146,7 +151,7 @@
 
 			    if (visibility < 0.9) discard;
 
-			    gl_FragColor = vec4(saturation(col.xyz, 1.2), 1.0);
+			    gl_FragColor = vec4(saturation(col.xyz, 1.2), 0.25);
 			}
     	</script>
 	</head>
@@ -207,7 +212,7 @@
 							value: texture
 						}
 					},
-					transparent: false, //true,
+					transparent: false,
 			        vertexShader: document.getElementById("vertexShader").textContent,
 			        fragmentShader: document.getElementById("fragmentShader").textContent
 			    });
