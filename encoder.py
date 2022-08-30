@@ -16,6 +16,7 @@ class Cluster(object):
         self.points = []
         self.colors = []
         self.indices = []
+        self.centroid = (0.0,0.0,0.0)
 
 def clamp(n, min_n, max_n):
     return max(min(max_n, n), min_n)
@@ -272,6 +273,13 @@ def main(debug=False):
                 clusters[label].points.append(vertexPositions[j])
                 clusters[label].colors.append(vertexColors[j])
                 clusters[label].indices.append(j)
+
+            # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
+            for j, centroid in enumerate(kmeans.cluster_centers_):
+                clusters[j].centroid = centroid
+
+            # https://stackoverflow.com/questions/17555218/python-how-to-sort-a-list-of-lists-by-the-fourth-element-in-each-list
+            clusters.sort(key=lambda x: x.centroid.all())
 
             # https://discourse.processing.org/t/linear-array-of-values-to-grid/14206/3
             stride = math.sqrt(len(clusters))
