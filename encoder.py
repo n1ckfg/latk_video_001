@@ -188,20 +188,33 @@ def main(debug=False):
             la.normalize()
 
             allPoints = []
+            allColors = []
 
             for layer in la.layers:
                 for frame in layer.frames:
                     for stroke in frame.strokes:
                         if (len(stroke.points) > 1):
-                            allPoints.append(stroke.points[0].co)
+                            point = (stroke.points[0].co[0], stroke.points[0].co[2], stroke.points[0].co[1])
+                            allPoints.append(point)
+                            
+                            color = (stroke.color[0], stroke.color[1], stroke.color[2], 1.0)
+                            allColors.append(color)
+                            
                             for i in range(1, len(stroke.points)):
-                                allPoints.append(stroke.points[i].co)
+                                point = (stroke.points[i].co[0], stroke.points[i].co[2], stroke.points[i].co[1])
+                                allPoints.append(point)
+                                allColors.append(color)
+                                
                                 p1 = stroke.points[i].co
                                 p2 = stroke.points[i-1].co
-                                drawLine(p1, p2)
+                                newPoints = drawLine(p1, p2)
+                                for newPoint in newPoints:
+                                    allPoints.append((newPoint[0], newPoint[2], newPoint[1]))
+                                    allColors.append(color)
 
             verts = np.asarray(allPoints)
-            newMesh = m = ml.Mesh(verts)
+            colors = np.asarray(allColors)
+            newMesh = m = ml.Mesh(verts, v_color_matrix=colors)
             ms.add_mesh(newMesh, "latk" + str(currentLatk))
 
         else:
@@ -314,7 +327,7 @@ def main(debug=False):
                 imgYPixels[jx, jy] = pos[1]
                 imgZPixels[jx, jy] = pos[2]
         else:
-        	# https://scikit-learn.org/stable/modules/clustering.html
+            # https://scikit-learn.org/stable/modules/clustering.html
             # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
             kmeans = KMeans(n_clusters=numClusters, algorithm="auto") # "auto", "elkan"
             kmeans.fit(vertexPositions)
