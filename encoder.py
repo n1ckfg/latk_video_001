@@ -130,6 +130,7 @@ def main(debug=False):
     dim = int(argv[2]) # 1024
     tilePixelSize = int(argv[3]) # 16
     tileSubdiv = int(argv[4]) # 16
+    framerate = argv[5] # 30
     # * * * * * * * * * * * * *
 
     tileDim = int(dim / tilePixelSize) 
@@ -450,6 +451,6 @@ def main(debug=False):
     '''
 
     # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 17 -preset slow -r 30 output.mp4
-    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r 30 " + outputPath + "/output.mp4")
+    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r " + str(framerate) + " " + outputPath + "/output.mp4")
 
 main()
