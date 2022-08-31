@@ -262,7 +262,7 @@ def main(debug=False):
         else:
         	# https://scikit-learn.org/stable/modules/clustering.html
             # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
-            kmeans = KMeans(n_clusters=numClusters, algorithm="lloyd") # "lloyd", "elkan"
+            kmeans = KMeans(n_clusters=numClusters, algorithm="auto") # "auto", "elkan"
             if (sortByPosition == True):
                 kmeans.fit(vertexPositions)
             else:
