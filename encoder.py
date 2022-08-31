@@ -130,6 +130,7 @@ def main(debug=False):
     # * * * * * * * * * * * * *
 
     tileDim = int(dim / tilePixelSize) 
+    newSampleNum = tileDim * tileDim #mesh.vertex_number()
     seqMin = 0.0
     seqMax = 0.0
     isMesh = False
@@ -175,8 +176,6 @@ def main(debug=False):
     print ("Found " + str(numLatks) + " latk files.")
 
     for i, url in enumerate(urls):  
-        ms = ml.MeshSet()
-
         if url.endswith("latk"):
             print("\nGenerating meshes from latk " + str(currentLatk+1) + " / " + str(numLatks))
             currentLatk += 1
@@ -184,13 +183,13 @@ def main(debug=False):
             # https://numpy.org/doc/stable/reference/generated/numpy.asarray.html
 
             la = latk.Latk(url)
-            la.normalize()
-
-            allPoints = []
-            allColors = []
 
             for layer in la.layers:
+                counter = 0
                 for frame in layer.frames:
+                    allPoints = []
+                    allColors = []
+
                     for stroke in frame.strokes:
                         if (len(stroke.points) > 1):
                             point = (stroke.points[0].co[0], stroke.points[0].co[2], stroke.points[0].co[1])
@@ -211,80 +210,107 @@ def main(debug=False):
                                     allPoints.append((newPoint[0], newPoint[2], newPoint[1]))
                                     allColors.append(color)
 
-            verts = np.asarray(allPoints)
-            colors = np.asarray(allColors)
-            newMesh = m = ml.Mesh(verts, v_color_matrix=colors)
-            ms.add_mesh(newMesh, "latk" + str(currentLatk))
+                    verts = np.asarray(allPoints)
+                    colors = np.asarray(allColors)
+                    
+                    ms = ml.MeshSet()
+                    newMesh = ml.Mesh(verts, v_color_matrix=colors)
+                    ms.add_mesh(newMesh, "latk" + str(currentLatk))
+                    
+                    ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True        
+                    ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
 
+                    ms.save_current_mesh(changeExtension(url, ".ply", "_" + str(counter) + "_resampled"), save_vertex_color=True)
+                    
+                    vertexPositions = ms.current_mesh().vertex_matrix()
+
+                    for vert in vertexPositions:
+                        x = vert[0]
+                        y = vert[1]
+                        z = vert[2]
+                        if (x < seqMin):
+                            seqMin = x
+                        if (x > seqMax):
+                            seqMax = x
+                        if (y < seqMin):
+                            seqMin = y
+                        if (y > seqMax):
+                            seqMax = y
+                        if (z < seqMin):
+                            seqMin = z
+                        if (z > seqMax):
+                            seqMax = z
+
+                    print("Resampled Latk frame " + str(counter+1))
+                    counter += 1
         else:
             print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
+            ms = ml.MeshSet()
             ms.load_new_mesh(url)
 
-        mesh = ms.current_mesh()
+            mesh = ms.current_mesh()
 
-        newSampleNum = tileDim * tileDim #mesh.vertex_number()
-
-        if (mesh.edge_number() != 0 or mesh.face_number() != 0):
-            numUvs = 0
-            
-            try:
-                numUvs = len(ms.current_mesh().vertex_tex_coord_matrix())
-                if (numUvs > 0):
-                    print("Found " + str(numUvs) + " vertex texture coordinates.")
-            except:
-                print("Found " + str(numUvs) + " vertex texture coordinates.")
-
-            if (numUvs == 0):
+            if (mesh.edge_number() != 0 or mesh.face_number() != 0):
+                numUvs = 0
+                
                 try:
-                    numUvs = len(ms.current_mesh().wedge_tex_coord_matrix())
+                    numUvs = len(ms.current_mesh().vertex_tex_coord_matrix())
                     if (numUvs > 0):
-                        print("Found " + str(numUvs) + " wedge texture coordinates.")
+                        print("Found " + str(numUvs) + " vertex texture coordinates.")
                 except:
-                    print("Found " + str(numUvs) + " wedge texture coordinates.")
+                    print("Found " + str(numUvs) + " vertex texture coordinates.")
 
-            if (numUvs > 0):
-                ms.transfer_texture_to_color_per_vertex(sourcemesh=0, targetmesh=0)
+                if (numUvs == 0):
+                    try:
+                        numUvs = len(ms.current_mesh().wedge_tex_coord_matrix())
+                        if (numUvs > 0):
+                            print("Found " + str(numUvs) + " wedge texture coordinates.")
+                    except:
+                        print("Found " + str(numUvs) + " wedge texture coordinates.")
 
-        if (mesh.edge_number() == 0 and mesh.face_number() == 0):
-            isMesh = False # It's a point cloud             
-        else:
-            isMesh = True # It's a mesh            
-        
-        if (useNewResampleMethod == True):
-            ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
-            ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
-        else:
-            if (newSampleNum >= mesh.vertex_number()):
-                if (isMesh == False):
-                    ms.generate_surface_reconstruction_ball_pivoting()
-                ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False)
+                if (numUvs > 0):
+                    ms.transfer_texture_to_color_per_vertex(sourcemesh=0, targetmesh=0)
+
+            if (mesh.edge_number() == 0 and mesh.face_number() == 0):
+                isMesh = False # It's a point cloud             
+            else:
+                isMesh = True # It's a mesh            
+            
+            if (useNewResampleMethod == True):
+                ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True
                 ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
             else:
-                ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True)
-        
-        ms.save_current_mesh(changeExtension(url, ".ply", "_resampled"), save_vertex_color=True)
-        
-        vertexPositions = ms.current_mesh().vertex_matrix()
+                if (newSampleNum >= mesh.vertex_number()):
+                    if (isMesh == False):
+                        ms.generate_surface_reconstruction_ball_pivoting()
+                    ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False)
+                    ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+                else:
+                    ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True)
+            
+            ms.save_current_mesh(changeExtension(url, ".ply", "_resampled"), save_vertex_color=True)
+            
+            vertexPositions = ms.current_mesh().vertex_matrix()
 
-        for vert in vertexPositions:
-            x = vert[0]
-            y = vert[1]
-            z = vert[2]
-            if (x < seqMin):
-                seqMin = x
-            if (x > seqMax):
-                seqMax = x
-            if (y < seqMin):
-                seqMin = y
-            if (y > seqMax):
-                seqMax = y
-            if (z < seqMin):
-                seqMin = z
-            if (z > seqMax):
-                seqMax = z
+            for vert in vertexPositions:
+                x = vert[0]
+                y = vert[1]
+                z = vert[2]
+                if (x < seqMin):
+                    seqMin = x
+                if (x > seqMax):
+                    seqMax = x
+                if (y < seqMin):
+                    seqMin = y
+                if (y > seqMax):
+                    seqMax = y
+                if (z < seqMin):
+                    seqMin = z
+                if (z > seqMax):
+                    seqMax = z
 
-        print("Resampled frame " + str(counter+1))
-        counter += 1
+            print("Resampled frame " + str(counter+1))
+            counter += 1
     
     # 2. Second pass, to convert the resampled point clouds to images
     urls = []
