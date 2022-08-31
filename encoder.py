@@ -260,7 +260,9 @@ def main(debug=False):
                 imgYPixels[jx, jy] = pos[1]
                 imgZPixels[jx, jy] = pos[2]
         else:
-            kmeans = KMeans(n_clusters=numClusters)
+        	# https://scikit-learn.org/stable/modules/clustering.html
+            # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
+            kmeans = KMeans(n_clusters=numClusters, algorithm="lloyd") # "lloyd", "elkan"
             if (sortByPosition == True):
                 kmeans.fit(vertexPositions)
             else:
@@ -274,7 +276,6 @@ def main(debug=False):
                 clusters[label].colors.append(vertexColors[j])
                 clusters[label].indices.append(j)
 
-            # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
             for j, centroid in enumerate(kmeans.cluster_centers_):
                 clusters[j].centroid = centroid
 
