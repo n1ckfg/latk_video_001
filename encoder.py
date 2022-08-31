@@ -205,7 +205,7 @@ def main(debug=False):
                 for layer in la.layers:
                     index = j
                     if (index > len(layer.frames) - 1):
-                        index = len(layer.frames) - 1
+                        index = j % len(layer.frames) - 1
 
                     frame = layer.frames[index]
 
