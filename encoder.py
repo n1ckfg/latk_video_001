@@ -50,8 +50,7 @@ def lerp3d(a, b, f):
     z = (a[2] * (1.0 - f)) + (b[2] * f)   
     return (x, y, z)
 
-def drawLine(p1, p2):
-    drawReps = 128
+def drawLine(drawReps, p1, p2):
     returns = []
 
     for i in range(0, drawReps):
@@ -207,7 +206,7 @@ def main(debug=False):
                                 
                                 p1 = stroke.points[i].co
                                 p2 = stroke.points[i-1].co
-                                newPoints = drawLine(p1, p2)
+                                newPoints = drawLine(tileDim, p1, p2)
                                 for newPoint in newPoints:
                                     allPoints.append((newPoint[0], newPoint[2], newPoint[1]))
                                     allColors.append(color)
