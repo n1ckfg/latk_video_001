@@ -135,10 +135,11 @@ def main(debug=False):
 
     tileDim = int(dim / tilePixelSize) 
     newSampleNum = tileDim * tileDim #mesh.vertex_number()
+    latkSampleNum = newSampleNum * 2
     seqMin = 0.0
     seqMax = 0.0
     isMesh = False
-    useNewResampleMethod = True
+    useNewResampleMethod = False
     halfDim = int(dim / 2)
     kmeansDim = int(tileDim / tileSubdiv)
     numClusters = int(tileSubdiv * tileSubdiv)
@@ -187,6 +188,8 @@ def main(debug=False):
             # https://numpy.org/doc/stable/reference/generated/numpy.asarray.html
 
             la = latk.Latk(url)
+            la.normalize()
+
             longestFrameCount = 0
             counter = 0
             
@@ -232,9 +235,19 @@ def main(debug=False):
                 ms = ml.MeshSet()
                 newMesh = ml.Mesh(verts, v_color_matrix=colors)
                 ms.add_mesh(newMesh, "latk" + str(currentLatk))
-                
-                ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True        
-                ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+                mesh = ms.current_mesh()
+
+                if (useNewResampleMethod == True):
+                    ms.generate_simplified_point_cloud(samplenum=latkSampleNum) # exactnumflag=True
+                    ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+                else:
+                    if (newSampleNum >= mesh.vertex_number()):
+                        if (isMesh == False):
+                            ms.generate_surface_reconstruction_ball_pivoting()
+                        ms.generate_sampling_poisson_disk(samplenum=latkSampleNum, subsample=False)
+                        ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+                    else:
+                        ms.generate_sampling_poisson_disk(samplenum=latkSampleNum, subsample=True)
 
                 ms.save_current_mesh(changeExtension(url, ".ply", "_" + zeroPadding(counter, longestFrameCount) + "_resampled"), save_vertex_color=True)
                 
@@ -263,7 +276,6 @@ def main(debug=False):
             print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
             ms = ml.MeshSet()
             ms.load_new_mesh(url)
-
             mesh = ms.current_mesh()
 
             if (mesh.edge_number() != 0 or mesh.face_number() != 0):
