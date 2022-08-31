@@ -180,16 +180,18 @@
 
 				scene = new THREE.Scene();
 
-				const dim = 256;
-				geometry = new THREE.SphereBufferGeometry(1, dim, dim);
+				const dim = 1024;
+				const dim3 = 127; //parseInt(Math.cbrt(dim * dim));
+				console.log("volume: " + dim3 + "^2 = " + (dim3 * dim3));
+				geometry = new THREE.SphereBufferGeometry(1, dim3, dim3);
 
 				video = document.createElement("video");
 				video.crossOrigin = "anonymous";
         		video.setAttribute('crossorigin', 'anonymous');
 				video.setAttribute("webkit-playsinline", "webkit-playsinline");
         		video.setAttribute('playsinline', 'playsinline');
-				//video.width = 1024;
-				//video.height = 1024;
+				video.width = dim;
+				video.height = dim;
         		video.autoplay = true;
 				video.loop = true;
 				video.muted = true;
