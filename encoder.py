@@ -41,6 +41,26 @@ def remap(value, min1, max1, min2, max2, useNp=True):
     else:
         return np.interp(value, [min1, max1], [min2, max2])
 
+def lerp(a, b, f): 
+    return (a * (1.0 - f)) + (b * f)
+
+def lerp3d(a, b, f):
+    x = (a[0] * (1.0 - f)) + (b[0] * f)   
+    y = (a[1] * (1.0 - f)) + (b[1] * f)   
+    z = (a[2] * (1.0 - f)) + (b[2] * f)   
+    return (x, y, z)
+
+def drawLine(p1, p2):
+    drawReps = 128
+    returns = []
+
+    for i in range(0, drawReps):
+        val = float(i) / float(drawReps) 
+        p3 = lerp3d(p1, p2, val)      
+        returns.append(p3)
+
+    return returns
+
 def changeExtension(_url, _newExt, _append=None):
     returns = ""
     returnsPathArray = _url.split(".")
@@ -111,7 +131,6 @@ def main(debug=False):
     # * * * * * * * * * * * * *
 
     tileDim = int(dim / tilePixelSize) 
-    sortByPosition = True   
     seqMin = 0.0
     seqMax = 0.0
     isMesh = False
@@ -144,16 +163,51 @@ def main(debug=False):
     
     for fileName in os.listdir(inputPath):
         fileName = fileName.lower()
-        if fileName.endswith("obj") or fileName.endswith("ply"): 
+        if fileName.endswith("obj") or fileName.endswith("ply") or fileName.endswith("latk"): 
             url = os.path.abspath(os.path.join(inputPath, fileName))
             urls.append(url)
     urls.sort()
 
-    for i in range(0, len(urls)):  
-        print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
+    numLatks = 0
+    currentLatk = 0
+    for url in urls:
+        if (url.endswith("latk")):
+            numLatks += 1  
+    print ("Found " + str(numLatks) + " latk files.")
 
+    for i, url in enumerate(urls):  
         ms = ml.MeshSet()
-        ms.load_new_mesh(urls[i])
+
+        if url.endswith("latk"):
+            print("\nGenerating meshes from latk " + str(currentLatk+1) + " / " + str(numLatks))
+            currentLatk += 1
+            # https://pymeshlab.readthedocs.io/en/0.1.9/tutorials/import_mesh_from_arrays.html
+            # https://numpy.org/doc/stable/reference/generated/numpy.asarray.html
+
+            la = latk.Latk(url)
+            la.normalize()
+
+            allPoints = []
+
+            for layer in la.layers:
+                for frame in layer.frames:
+                    for stroke in frame.strokes:
+                        if (len(stroke.points) > 1):
+                            allPoints.append(stroke.points[0].co)
+                            for i in range(1, len(stroke.points)):
+                                allPoints.append(stroke.points[i].co)
+                                p1 = stroke.points[i].co
+                                p2 = stroke.points[i-1].co
+                                drawLine(p1, p2)
+
+            verts = np.asarray(allPoints)
+            newMesh = m = ml.Mesh(verts)
+            ms.add_mesh(newMesh, "latk" + str(currentLatk))
+
+        else:
+            print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
+            ms.load_new_mesh(url)
+
         mesh = ms.current_mesh()
 
         newSampleNum = tileDim * tileDim #mesh.vertex_number()
@@ -189,14 +243,14 @@ def main(debug=False):
             ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
         else:
             if (newSampleNum >= mesh.vertex_number()):
-                if (mesh.edge_number() == 0 and mesh.face_number() == 0):
+                if (isMesh == False):
                     ms.generate_surface_reconstruction_ball_pivoting()
                 ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=False)
                 ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
             else:
                 ms.generate_sampling_poisson_disk(samplenum=newSampleNum, subsample=True)
         
-        ms.save_current_mesh(changeExtension(urls[i], ".ply", "_resampled"), save_vertex_color=True)
+        ms.save_current_mesh(changeExtension(url, ".ply", "_resampled"), save_vertex_color=True)
         
         vertexPositions = ms.current_mesh().vertex_matrix()
 
@@ -231,11 +285,11 @@ def main(debug=False):
             urls.append(url)
     urls.sort()
 
-    for i in range(0, len(urls)):  
+    for i, url in enumerate(urls):  
         print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
 
         ms = ml.MeshSet()
-        ms.load_new_mesh(urls[i])
+        ms.load_new_mesh(url)
         mesh = ms.current_mesh()
        
         vertexColors = ms.current_mesh().vertex_color_matrix()
@@ -263,10 +317,8 @@ def main(debug=False):
         	# https://scikit-learn.org/stable/modules/clustering.html
             # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
             kmeans = KMeans(n_clusters=numClusters, algorithm="auto") # "auto", "elkan"
-            if (sortByPosition == True):
-                kmeans.fit(vertexPositions)
-            else:
-                kmeans.fit(vertexColors) # sort by color
+            kmeans.fit(vertexPositions)
+            #kmeans.fit(vertexColors) # sort by color
            
             for j in range(0, numClusters):
                 clusters.append(Cluster())
