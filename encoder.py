@@ -21,6 +21,9 @@ class Cluster(object):
 def clamp(n, min_n, max_n):
     return max(min(max_n, n), min_n)
 
+def zeroPadding(val, maxVal):
+    return str(val).zfill(len(str(maxVal)))
+
 def xyFromLoc(loc, width):
     x = loc % width
     y = (loc - x) / width
@@ -183,12 +186,24 @@ def main(debug=False):
             # https://numpy.org/doc/stable/reference/generated/numpy.asarray.html
 
             la = latk.Latk(url)
-
+            longestFrameCount = 0
+            counter = 0
+            
             for layer in la.layers:
-                counter = 0
-                for frame in layer.frames:
-                    allPoints = []
-                    allColors = []
+                if len(layer.frames) > longestFrameCount:
+                    longestFrameCount = len(layer.frames)
+            print ("Longest layer frame count: " + str(longestFrameCount))
+
+            for j in range(0, longestFrameCount):
+                allPoints = []
+                allColors = []
+                    
+                for layer in la.layers:
+                    index = j
+                    if (index > len(layer.frames) - 1):
+                        index = len(layer.frames) - 1
+
+                    frame = layer.frames[index]
 
                     for stroke in frame.strokes:
                         if (len(stroke.points) > 1):
@@ -210,39 +225,39 @@ def main(debug=False):
                                     allPoints.append((newPoint[0], newPoint[2], newPoint[1]))
                                     allColors.append(color)
 
-                    verts = np.asarray(allPoints)
-                    colors = np.asarray(allColors)
-                    
-                    ms = ml.MeshSet()
-                    newMesh = ml.Mesh(verts, v_color_matrix=colors)
-                    ms.add_mesh(newMesh, "latk" + str(currentLatk))
-                    
-                    ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True        
-                    ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
+                verts = np.asarray(allPoints)
+                colors = np.asarray(allColors)
+                
+                ms = ml.MeshSet()
+                newMesh = ml.Mesh(verts, v_color_matrix=colors)
+                ms.add_mesh(newMesh, "latk" + str(currentLatk))
+                
+                ms.generate_simplified_point_cloud(samplenum=newSampleNum) # exactnumflag=True        
+                ms.transfer_attributes_per_vertex(sourcemesh=0, targetmesh=1)
 
-                    ms.save_current_mesh(changeExtension(url, ".ply", "_" + str(counter) + "_resampled"), save_vertex_color=True)
-                    
-                    vertexPositions = ms.current_mesh().vertex_matrix()
+                ms.save_current_mesh(changeExtension(url, ".ply", "_" + zeroPadding(counter, longestFrameCount) + "_resampled"), save_vertex_color=True)
+                
+                vertexPositions = ms.current_mesh().vertex_matrix()
 
-                    for vert in vertexPositions:
-                        x = vert[0]
-                        y = vert[1]
-                        z = vert[2]
-                        if (x < seqMin):
-                            seqMin = x
-                        if (x > seqMax):
-                            seqMax = x
-                        if (y < seqMin):
-                            seqMin = y
-                        if (y > seqMax):
-                            seqMax = y
-                        if (z < seqMin):
-                            seqMin = z
-                        if (z > seqMax):
-                            seqMax = z
+                for vert in vertexPositions:
+                    x = vert[0]
+                    y = vert[1]
+                    z = vert[2]
+                    if (x < seqMin):
+                        seqMin = x
+                    if (x > seqMax):
+                        seqMax = x
+                    if (y < seqMin):
+                        seqMin = y
+                    if (y > seqMax):
+                        seqMax = y
+                    if (z < seqMin):
+                        seqMin = z
+                    if (z > seqMax):
+                        seqMax = z
 
-                    print("Resampled Latk frame " + str(counter+1))
-                    counter += 1
+                print("Resampled Latk frame " + str(counter+1))
+                counter += 1
         else:
             print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
             ms = ml.MeshSet()
