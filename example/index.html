@@ -180,16 +180,13 @@
 
 				scene = new THREE.Scene();
 
-				const dim = 256;
-				geometry = new THREE.SphereBufferGeometry(1, dim, dim);
+				geometry = new THREE.SphereBufferGeometry(1, 256, 256);
 
 				video = document.createElement("video");
 				video.crossOrigin = "anonymous";
         		video.setAttribute('crossorigin', 'anonymous');
 				video.setAttribute("webkit-playsinline", "webkit-playsinline");
         		video.setAttribute('playsinline', 'playsinline');
-				//video.width = 1024;
-				//video.height = 1024;
         		video.autoplay = true;
 				video.loop = true;
 				video.muted = true;
