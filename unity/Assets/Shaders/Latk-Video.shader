@@ -2,7 +2,11 @@ Shader "Nick/Latk-Video" {
 
     Properties {
         _MainTex ("Texture", 2D) = "white" {}
-    }
+		satThresh ("Saturation Threshold", Float) = 0.5 		// orig 0.5 or 0.85
+		brightThresh ("Brightness Threshold", Float) = 0.5 	// orig 0.5 or 0.85 or 0.9
+		epsilon ("Epsilon", Float) = 0.03 // orig 1.0e-10 or 0.0000000001 or orig 0.03
+		visibilityThreshold ("Visibility Threshold", Float) = 0.99
+	}
 
     SubShader {
         Tags { "RenderType"="Opaque" }
@@ -30,8 +34,97 @@ Shader "Nick/Latk-Video" {
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
+			float satThresh, brightThresh, epsilon, visibilityThreshold;
+			float meshDensityVal = 2048.0;
+			//float2 meshDensity = float2(meshDensityVal, meshDensityVal);
+			int numNeighbors = 4; // orig 8
+			//int numDudNeighborsThreshold = int(float(numNeighbors) * 0.75);
 
-            v2f vert (appdata v) {
+			float rgbToHue(float3 c) {
+				float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+				float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
+				float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
+
+				float d = q.x - min(q.w, q.y);
+
+				float3 result = float3(abs(q.z + (q.w - q.y) / (6.0 * d + epsilon)), d / (q.x + epsilon), q.x);
+
+				return result.g > satThresh && result.b > brightThresh ? result.r : 0.0;
+			}
+
+			float depthForPoint(float2 uv) {
+				return rgbToHue(tex2D(_MainTex, uv).rgb);
+			}
+
+			float calculateVisibility(float depth, float2 uv) {
+				float visibility = 1.0;
+				float2 textureStep = 1.0 / meshDensity;
+				float neighborDepths[numNeighbors];
+				neighborDepths[0] = depthForPoint(uv + float2(0.0, textureStep.y));
+				neighborDepths[1] = depthForPoint(uv + float2(textureStep.x, 0.0));
+				neighborDepths[2] = depthForPoint(uv + float2(0.0, -textureStep.y));
+				neighborDepths[3] = depthForPoint(uv + float2(-textureStep.x, 0.0));
+				//neighborDepths[4] = depthForPoint(uv + float2(-textureStep.x, -textureStep.y));
+				//neighborDepths[5] = depthForPoint(uv + float2(textureStep.x,  textureStep.y));
+				//neighborDepths[6] = depthForPoint(uv + float2(textureStep.x, -textureStep.y));
+				//neighborDepths[7] = depthForPoint(uv + float2(-textureStep.x,  textureStep.y));
+
+				// Search neighbor verts in order to see if we are near an edge.
+				// If so, clamp to the surface closest to us.
+				int numDudNeighbors = 0;
+				if (depth < epsilon || (1.0 - depth) < epsilon) {
+					float nearestDepth = 1.0;
+					for (int i = 0; i < numNeighbors; i++) {
+						float depthNeighbor = neighborDepths[i];
+						if (depthNeighbor >= epsilon && (1.0 - depthNeighbor) > epsilon) {
+							if (depthNeighbor < nearestDepth) {
+								nearestDepth = depthNeighbor;
+							}
+						}
+						else {
+							numDudNeighbors++;
+						}
+					}
+
+					depth = nearestDepth;
+					visibility = 0.8;
+
+					// Blob filter
+					if (numDudNeighbors > numDudNeighborsThreshold) {
+						visibility = 0.0;
+					}
+				}
+
+				// Internal edge filter
+				float maxDisparity = 0.0;
+
+				for (int i = 0; i < numNeighbors; i++) {
+					float depthNeighbor = neighborDepths[i];
+					if (depthNeighbor >= epsilon && (1.0 - depthNeighbor) > epsilon) {
+						maxDisparity = max(maxDisparity, abs(depth - depthNeighbor));
+					}
+				}
+
+				visibility *= 1.0 - maxDisparity;
+
+				return visibility;
+			}
+
+			/*
+			float rgbToHue(float3 c) {
+				float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+				float4 p = lerp(float4(c.zy, K.wz), float4(c.yz, K.xy), step(c.z, c.y));
+				float4 q = lerp(float4(p.xyw, c.x), float4(c.x, p.yzx), step(p.x, c.x));
+
+				float d = q.x - min(q.w, q.y);
+
+				float3 result = float3(abs(q.z + (q.w - q.y) / (6.0 * d + epsilon)), d / (q.x + epsilon), q.x);
+
+				return result.y > satThresh && result.z > brightThresh ? result.x : 0.0;
+			}
+			*/
+            
+			v2f vert (appdata v) {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
