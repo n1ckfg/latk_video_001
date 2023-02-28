@@ -35,10 +35,10 @@ Shader "Nick/Latk-Video" {
             sampler2D _MainTex;
             float4 _MainTex_ST;
 			float satThresh, brightThresh, epsilon, visibilityThreshold;
-			float meshDensityVal = 2048.0;
-			//float2 meshDensity = float2(meshDensityVal, meshDensityVal);
+			//float meshDensityVal = 2048.0;
+			float2 meshDensity = float2(2048.0, 2048.0); //meshDensityVal, meshDensityVal);
 			int numNeighbors = 4; // orig 8
-			//int numDudNeighborsThreshold = int(float(numNeighbors) * 0.75);
+			int numDudNeighborsThreshold = 3; // int(float(numNeighbors) * 0.75);
 
 			float rgbToHue(float3 c) {
 				float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -53,21 +53,29 @@ Shader "Nick/Latk-Video" {
 			}
 
 			float depthForPoint(float2 uv) {
-				return rgbToHue(tex2D(_MainTex, uv).rgb);
+				return rgbToHue(tex2Dlod(_MainTex, float4(uv, 0, 0)).rgb);
+			}
+
+			float3 saturation(float3 rgb, float adjustment) {
+				float3 W = float3(0.2125, 0.7154, 0.0721);
+				float3 intensity = dot(rgb, W);
+				return lerp(intensity, rgb, adjustment);
 			}
 
 			float calculateVisibility(float depth, float2 uv) {
 				float visibility = 1.0;
 				float2 textureStep = 1.0 / meshDensity;
-				float neighborDepths[numNeighbors];
+
+				float neighborDepths[4];
+
 				neighborDepths[0] = depthForPoint(uv + float2(0.0, textureStep.y));
 				neighborDepths[1] = depthForPoint(uv + float2(textureStep.x, 0.0));
 				neighborDepths[2] = depthForPoint(uv + float2(0.0, -textureStep.y));
 				neighborDepths[3] = depthForPoint(uv + float2(-textureStep.x, 0.0));
 				//neighborDepths[4] = depthForPoint(uv + float2(-textureStep.x, -textureStep.y));
-				//neighborDepths[5] = depthForPoint(uv + float2(textureStep.x,  textureStep.y));
+				//neighborDepths[5] = depthForPoint(uv + float2(textureStep.x, textureStep.y));
 				//neighborDepths[6] = depthForPoint(uv + float2(textureStep.x, -textureStep.y));
-				//neighborDepths[7] = depthForPoint(uv + float2(-textureStep.x,  textureStep.y));
+				//neighborDepths[7] = depthForPoint(uv + float2(-textureStep.x, textureStep.y));
 
 				// Search neighbor verts in order to see if we are near an edge.
 				// If so, clamp to the surface closest to us.
@@ -109,40 +117,37 @@ Shader "Nick/Latk-Video" {
 
 				return visibility;
 			}
-
-			/*
-			float rgbToHue(float3 c) {
-				float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-				float4 p = lerp(float4(c.zy, K.wz), float4(c.yz, K.xy), step(c.z, c.y));
-				float4 q = lerp(float4(p.xyw, c.x), float4(c.x, p.yzx), step(p.x, c.x));
-
-				float d = q.x - min(q.w, q.y);
-
-				float3 result = float3(abs(q.z + (q.w - q.y) / (6.0 * d + epsilon)), d / (q.x + epsilon), q.x);
-
-				return result.y > satThresh && result.z > brightThresh ? result.x : 0.0;
-			}
-			*/
-            
+           
 			v2f vert (appdata v) {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
+				float2 uvX = float2(0.5 + v.uv.x * 0.5, 0.5 + v.uv.y * 0.5);
+				float2 uvY = float2(0.5 + v.uv.x * 0.5, v.uv.y * 0.5);
+				float2 uvZ = float2(v.uv.x * 0.5, v.uv.y * 0.5);
+
+				float posX = depthForPoint(uvX);
+				float posY = depthForPoint(uvY);
+				float posZ = depthForPoint(uvZ);
+
+				float visX = calculateVisibility(posX, uvX);
+				float visY = calculateVisibility(posY, uvY);
+				float visZ = calculateVisibility(posZ, uvZ);
+
+				//visibility = visX < visibilityThreshold || visY < visibilityThreshold || visZ < visibilityThreshold ? 0.0 : 1.0;
+
+				float3 newPosition = float3(posX, posY, posZ);
+
+				v2f o;
+                //o.vertex = UnityObjectToClipPos(v.vertex);
+				o.vertex = UnityObjectToClipPos(newPosition);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
+                //UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
-
-			float3 saturation(float3 rgb, float adjustment) {
-				float3 W = float3(0.2125, 0.7154, 0.0721);
-				float3 intensity = dot(rgb, W);
-				return lerp(intensity, rgb, adjustment);
-			}
 
             fixed4 frag (v2f i) : SV_Target {
 				float2 uvRgb = float2(i.uv.x * 0.5, 0.5 + i.uv.y * 0.5);
 				fixed4 col = tex2D(_MainTex, uvRgb);
                 //UNITY_APPLY_FOG(i.fogCoord, col);
-				return fixed4(saturation(col.xyz, 0.0), 1.0);
+				return fixed4(saturation(col.xyz, 1.2), 1.0);
             }
             ENDCG
         }
@@ -159,7 +164,9 @@ Shader "Nick/Latk-Video" {
 // https://github.com/juniorxsound/Depthkit.js
 // https://github.com/simeonradivoev/kinect-hue-depth-encoding
 // https://github.com/andybiar/Z-Depth-Image-Converter/
+*/
 
+/*
 varying vec2 vUv;
 varying float visibility;
 uniform sampler2D tex;
