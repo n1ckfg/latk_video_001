@@ -1,6 +1,7 @@
 ﻿Shader "Nick/LED_Display_Alt_Tri" {
 
 	Properties{
+		_MainTex("Texture", 2D) = "white" {}
 		_Size("Size", Range(0, 3)) = 0.5
 		_Brightness("Brightness", Range(1, 200)) = 10.0
 	}
@@ -19,6 +20,14 @@
 
 			float _Size;
 			float _Brightness;
+			sampler2D _MainTex;
+			float4 _MainTex_ST;
+
+			float3 saturation(float3 rgb, float adjustment) {
+				float3 W = float3(0.2125, 0.7154, 0.0721);
+				float3 intensity = dot(rgb, W);
+				return lerp(intensity, rgb, adjustment);
+			}
 
 			struct appdata {
 				float4 vertex : POSITION;
@@ -28,14 +37,12 @@
 			struct v2g {
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
-				fixed4 color : COLOR;
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			struct g2f {
 				float4 pos : SV_POSITION;
 				float2 uv : TEXCOORD0;
-				fixed4 color : COLOR;
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
@@ -46,7 +53,6 @@
 				o.vertex = mul(unity_ObjectToWorld, v.vertex);
 				//o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = v.texcoord;
-				o.color = v.color;
 
 				return o;
 			}
@@ -79,24 +85,23 @@
 				#endif
 
 				o.pos = mul(vp, v[0]);
-				o.uv = float2(1.0f, 0.0f);
-				o.color = IN[0].color; 
+				o.uv = IN[0].uv;// float2(1.0f, 0.0f);
 				tristream.Append(o);
 
 				o.pos = mul(vp, v[1]);
-				o.uv = float2(1.0f, 1.0f);
-				o.color = IN[0].color;
+				o.uv = IN[0].uv; //float2(1.0f, 1.0f);
 				tristream.Append(o);
 
 				o.pos = mul(vp, v[2]);
-				o.uv = float2(0.0f, 0.0f);
-				o.color = IN[0].color;
+				o.uv = IN[0].uv; //float2(0.0f, 0.0f);
 				tristream.Append(o);
 			}
 
 			fixed4 frag(g2f i) : SV_Target {
-				return  i.color * _Brightness;
-			} 
+				float2 uvRgb = float2(i.uv.x * 0.5, 0.5 + i.uv.y * 0.5);
+				fixed4 col = tex2D(_MainTex, uvRgb);
+				return fixed4(saturation(col.xyz, 1.2), 1.0); 
+			}
 			ENDCG
 		}
 	}

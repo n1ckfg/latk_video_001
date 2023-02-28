@@ -2,6 +2,8 @@ Shader "Nick/Latk-Video" {
 
     Properties {
         _MainTex ("Texture", 2D) = "white" {}
+		_Size("Size", Range(0, 3)) = 0.5
+		//_Brightness("Brightness", Range(1, 200)) = 10.0
 		satThresh ("Saturation Threshold", Float) = 0.5 		// orig 0.5 or 0.85
 		brightThresh ("Brightness Threshold", Float) = 0.5 	// orig 0.5 or 0.85 or 0.9
 		epsilon ("Epsilon", Float) = 0.03 // orig 1.0e-10 or 0.0000000001 or orig 0.03
@@ -14,26 +16,34 @@ Shader "Nick/Latk-Video" {
 
         Pass {
             CGPROGRAM
-            #pragma vertex vert
+			#pragma require geometry
+			#pragma vertex vert
             #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
+			#pragma geometry geom
 
             #include "UnityCG.cginc"
 
-            struct appdata {
-                float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
-            };
+			struct appdata {
+				float4 vertex : POSITION;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			};
 
-            struct v2f {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
-            };
+			struct v2g {
+				float4 vertex : POSITION;
+				float2 uv : TEXCOORD0;
+				UNITY_VERTEX_OUTPUT_STEREO
+			};
+
+			struct g2f {
+				float4 pos : SV_POSITION;
+				float2 uv : TEXCOORD0;
+				UNITY_VERTEX_OUTPUT_STEREO
+			};
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
+			float _Size;
+			//float _Brightness;
 			float satThresh, brightThresh, epsilon, visibilityThreshold;
 			//float meshDensityVal = 2048.0;
 			float2 meshDensity = float2(2048.0, 2048.0); //meshDensityVal, meshDensityVal);
@@ -118,10 +128,14 @@ Shader "Nick/Latk-Video" {
 				return visibility;
 			}
            
-			v2f vert (appdata v) {
-				float2 uvX = float2(0.5 + v.uv.x * 0.5, 0.5 + v.uv.y * 0.5);
-				float2 uvY = float2(0.5 + v.uv.x * 0.5, v.uv.y * 0.5);
-				float2 uvZ = float2(v.uv.x * 0.5, v.uv.y * 0.5);
+			v2g vert(appdata_full v) {
+				v2g o;
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
+				float2 uvX = float2(0.5 + v.texcoord.x * 0.5, 0.5 + v.texcoord.y * 0.5);
+				float2 uvY = float2(0.5 + v.texcoord.x * 0.5, v.texcoord.y * 0.5);
+				float2 uvZ = float2(v.texcoord.x * 0.5, v.texcoord.y * 0.5);
 
 				float posX = depthForPoint(uvX);
 				float posY = depthForPoint(uvY);
@@ -135,18 +149,55 @@ Shader "Nick/Latk-Video" {
 
 				float3 newPosition = float3(posX, posY, posZ);
 
-				v2f o;
-                //o.vertex = UnityObjectToClipPos(v.vertex);
-				o.vertex = UnityObjectToClipPos(newPosition);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                //UNITY_TRANSFER_FOG(o,o.vertex);
+				o.vertex = mul(unity_WorldToObject, newPosition);
+				o.uv = v.texcoord;
+
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target {
+			[maxvertexcount(3)]
+			void geom(triangle v2g IN[3], inout TriangleStream<g2f> tristream) {
+				g2f o;
+
+				float3 up = float3(0, 1, 0);
+				float3 look = _WorldSpaceCameraPos - IN[0].vertex;
+				look.y = 0;
+				look = normalize(look);
+				float3 right = cross(up, look);
+
+				float halfS = 0.5f * _Size;
+
+				float4 v[3];
+				v[0] = float4(IN[0].vertex + (halfS * 2) * right - (halfS * 2) * up, 1.0f);
+				//v[0] = float4(IN[0].vertex + halfS * right - halfS * up, 1.0f);
+				v[1] = float4(IN[0].vertex + halfS * right + halfS * up, 1.0f);
+				v[2] = float4(IN[0].vertex - halfS * right - halfS * up, 1.0f);
+
+				float4x4 vp;
+#if UNITY_VERSION >= 560 
+				vp = mul(UNITY_MATRIX_MVP, unity_WorldToObject);
+#else 
+#if UNITY_SHADER_NO_UPGRADE 
+				vp = mul(UNITY_MATRIX_MVP, unity_WorldToObject);
+#endif
+#endif
+
+				o.pos = mul(vp, v[0]);
+				o.uv = IN[0].uv; // float2(1.0f, 0.0f);
+				tristream.Append(o);
+
+				o.pos = mul(vp, v[1]);
+				o.uv = IN[0].uv; //float2(1.0f, 1.0f);
+				tristream.Append(o);
+
+				o.pos = mul(vp, v[2]);
+				o.uv = IN[0].uv; //float2(0.0f, 0.0f);
+				tristream.Append(o);
+			}
+
+			fixed4 frag(g2f i) : SV_Target{
 				float2 uvRgb = float2(i.uv.x * 0.5, 0.5 + i.uv.y * 0.5);
 				fixed4 col = tex2D(_MainTex, uvRgb);
-                //UNITY_APPLY_FOG(i.fogCoord, col);
 				return fixed4(saturation(col.xyz, 1.2), 1.0);
             }
             ENDCG
