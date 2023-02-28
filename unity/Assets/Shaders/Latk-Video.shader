@@ -2,7 +2,7 @@ Shader "Nick/Latk-Video" {
 
     Properties {
         _MainTex ("Texture", 2D) = "white" {}
-		_Size("Size", Range(0, 3)) = 0.5
+		_Size("Size", Float) = 0.5
 		//_Brightness("Brightness", Range(1, 200)) = 10.0
 		satThresh ("Saturation Threshold", Float) = 0.5 		// orig 0.5 or 0.85
 		brightThresh ("Brightness Threshold", Float) = 0.5 	// orig 0.5 or 0.85 or 0.9
@@ -31,12 +31,14 @@ Shader "Nick/Latk-Video" {
 			struct v2g {
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
+				float2 visibility : TEXCOORD1;
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
 			struct g2f {
 				float4 pos : SV_POSITION;
 				float2 uv : TEXCOORD0;
+				float2 visibility : TEXCOORD1;
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
@@ -70,6 +72,10 @@ Shader "Nick/Latk-Video" {
 				float3 W = float3(0.2125, 0.7154, 0.0721);
 				float3 intensity = dot(rgb, W);
 				return lerp(intensity, rgb, adjustment);
+			}
+
+			float map(float value, float min1, float max1, float min2, float max2) {
+				return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
 			}
 
 			float calculateVisibility(float depth, float2 uv) {
@@ -145,7 +151,7 @@ Shader "Nick/Latk-Video" {
 				float visY = calculateVisibility(posY, uvY);
 				float visZ = calculateVisibility(posZ, uvZ);
 
-				//visibility = visX < visibilityThreshold || visY < visibilityThreshold || visZ < visibilityThreshold ? 0.0 : 1.0;
+				o.visibility = visX < visibilityThreshold || visY < visibilityThreshold || visZ < visibilityThreshold ? 0.0 : 1.0;
 
 				float3 newPosition = float3(posX, posY, posZ);
 
@@ -165,7 +171,7 @@ Shader "Nick/Latk-Video" {
 				look = normalize(look);
 				float3 right = cross(up, look);
 
-				float halfS = 0.5f * _Size;
+				float halfS = 0.5 * _Size / 100.0;
 
 				float4 v[3];
 				v[0] = float4(IN[0].vertex + (halfS * 2) * right - (halfS * 2) * up, 1.0f);
@@ -184,18 +190,23 @@ Shader "Nick/Latk-Video" {
 
 				o.pos = mul(vp, v[0]);
 				o.uv = IN[0].uv; // float2(1.0f, 0.0f);
+				o.visibility = IN[0].visibility.x;
 				tristream.Append(o);
 
 				o.pos = mul(vp, v[1]);
 				o.uv = IN[0].uv; //float2(1.0f, 1.0f);
+				o.visibility = IN[0].visibility.x;
 				tristream.Append(o);
 
 				o.pos = mul(vp, v[2]);
 				o.uv = IN[0].uv; //float2(0.0f, 0.0f);
+				o.visibility = IN[0].visibility.x;
 				tristream.Append(o);
 			}
 
 			fixed4 frag(g2f i) : SV_Target{
+				clip(map(i.visibility.x, 0.9, 1.0, -1.0, 1.0));
+
 				float2 uvRgb = float2(i.uv.x * 0.5, 0.5 + i.uv.y * 0.5);
 				fixed4 col = tex2D(_MainTex, uvRgb);
 				return fixed4(saturation(col.xyz, 1.2), 1.0);
