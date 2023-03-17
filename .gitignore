@@ -2,12 +2,6 @@
 __pycache__/
 .DS_Store
 input/
-input2/
-input3/
-input4/
 output/
-output2/
-output3/
-output4/
 test/
 example/images/output.mp4
