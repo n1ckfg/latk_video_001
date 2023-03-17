@@ -1,6 +1,6 @@
 @echo off
 
-cd %~dp1
+cd %~dp0
 
 set FFMPEG_PATH=C:\util\ffmpeg\bin\ffmpeg
 set TARGET_DIR="..\output"
