@@ -10,6 +10,7 @@ import colorsys
 from sklearn.cluster import KMeans
 import math
 import latk
+import time
 
 class Cluster(object):
     def __init__(self):
@@ -382,7 +383,7 @@ def main(debug=False):
         else:
             # https://scikit-learn.org/stable/modules/clustering.html
             # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html
-            kmeans = KMeans(n_clusters=numClusters, algorithm="auto") # "auto", "elkan"
+            kmeans = KMeans(n_clusters=numClusters, n_init=10, algorithm="lloyd") # "lloyd", "elkan"
             kmeans.fit(vertexPositions)
             #kmeans.fit(vertexColors) # sort by color
            
@@ -463,6 +464,6 @@ def main(debug=False):
     '''
 
     # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 17 -preset slow -r 30 output.mp4
-    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r " + str(framerate) + " " + outputPath + "/output.mp4")
+    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r " + str(framerate) + " " + outputPath + "/output" + str(int(time.time())) + ".mp4")
 
 main()
