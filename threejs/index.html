@@ -227,6 +227,35 @@
 				setupMouse();
 
 				window.addEventListener("resize", onWindowResize, false);
+
+				// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+			    const dropZone = document.getElementsByTagName("body")[0];
+
+			    dropZone.addEventListener('dragover', function(event) {
+			      event.preventDefault();
+			    });
+
+			    dropZone.addEventListener('dragleave', function(event) {
+			      event.preventDefault();
+			    });
+
+			    dropZone.addEventListener('drop', function(event) {
+					event.preventDefault();
+
+					const file = event.dataTransfer.files[0];
+					const fileReader = new FileReader();
+
+					fileReader.onload = function(event) {
+						const videoBlob = new Blob([event.target.result], {type: 'video/mp4'});
+						const videoUrl = URL.createObjectURL(videoBlob);
+						video.src = videoUrl;
+						video.play();
+					};
+
+					video.pause();
+					fileReader.readAsArrayBuffer(file);
+			    });
 			}
 
 			function onWindowResize() {
