@@ -1,0 +1,33 @@
+/* 
+A-Frame Play on Click component
+written by Tyson Moll, 2022-02
+*/
+
+#click-anywhere-image {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+}
+
+.overlayGreyout {
+  position: fixed;
+  z-index: 2;
+  background-color: #33333344;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  position: fixed;
+}
+
+#click-anywhere-banner {
+  display: none;
+}
+
+#infoOverlay {
+  position: fixed;
+  z-index: 2;
+}
+
