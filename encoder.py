@@ -464,6 +464,6 @@ def main(debug=False):
     '''
 
     # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 17 -preset slow -r 30 output.mp4
-    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r " + str(framerate) + " " + outputPath + "/output" + str(int(time.time())) + ".mp4")
+    os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r " + str(framerate) + " " + outputPath + "/output_" + str(int(time.time())) + ".mp4")
 
 main()
