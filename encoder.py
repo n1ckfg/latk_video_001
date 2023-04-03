@@ -464,6 +464,9 @@ def main(debug=False):
     '''
 
     # ffmpeg -y -i output%d.png -c:v libx264 -pix_fmt yuv420p -crf 17 -preset slow -r 30 output.mp4
+
+    #filterString = "-filter:v scale=in_color_matrix=auto:in_range=auto:out_color_matrix=bt709:out_range=tv"
+    #os.system("ffmpeg -y -i " + outputPath + "/output%d.png " + filterString + " -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r " + str(framerate) + " " + outputPath + "/output_" + str(int(time.time())) + ".mp4")
     os.system("ffmpeg -y -i " + outputPath + "/output%d.png -c:v libx264 -pix_fmt yuv420p -preset slow -crf 17 -r " + str(framerate) + " " + outputPath + "/output_" + str(int(time.time())) + ".mp4")
 
 main()
