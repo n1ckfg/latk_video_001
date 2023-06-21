@@ -1,6 +1,6 @@
 pymeshlab
 pillow
 numpy
-sklearn
+scikit-learn
 latk
 
