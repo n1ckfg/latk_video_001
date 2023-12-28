@@ -122,16 +122,16 @@ class ExportLatkVideo(bpy.types.Operator, ExportHelper): # TODO combine into one
 
     def execute(self, context):
         import latk_blender as la
-        keywords = self.as_keywords(ignore=("axis_forward", "axis_up", "filter_glob", "split_mode", "check_existing", "bake", "useScaleAndOffset")) #, "roundValues", "numPlaces"))
+        keywords = self.as_keywords(ignore=("axis_forward", "axis_up", "filter_glob", "split_mode", "check_existing")) #, "roundValues", "numPlaces"))
         if bpy.data.is_saved:
             import os
         #~
-        keywords["bake"] = self.bake
+        #keywords["bake"] = self.bake
         #keywords["roundValues"] = self.roundValues
         #keywords["numPlaces"] = self.numPlaces
-        keywords["useScaleAndOffset"] = self.useScaleAndOffset
+        #keywords["useScaleAndOffset"] = self.useScaleAndOffset
         #~
-        la.writeBrushStrokes(**keywords, zipped=False)
+        latk_video_main(**keywords)
         return {'FINISHED'}
 
 
@@ -143,7 +143,7 @@ classes = (
 )
 
 def menu_func_export(self, context):
-    self.layout.operator(ExportLatkVideo.bl_idname, text="Latk Video (.mp4)")
+    self.layout.operator(ExportLatkVideo.bl_idname, text="Latk - Video (.mp4)")
 
 # * * * * * * * * * * * * * * * * * * * * * * * * * *
 def register():

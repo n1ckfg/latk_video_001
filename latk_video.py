@@ -99,13 +99,8 @@ def colorFloatToColorInt(rgb):
 def colorIntToColorFloat(rgb):
     return (float(rgb[0] / 255.0), float(rgb[1] / 255.0), float(rgb[2] / 255.0))
 
-def encoder(depth, debug=False):
+def encoder(depth):
     result = hueToRgb(depth)
-    if (debug == True):
-        test = rgbToHue(result)
-        #print(str(depth) + ", " + str(test) + ", " + str(abs(depth - test)))
-        if (abs(depth - test) > 0.01):
-            return 0
     return colorFloatToColorInt(result)
 
 def encodePoint(col, pos, seqMin=0.0, seqMax=1.0):
@@ -121,7 +116,7 @@ def encodePoint(col, pos, seqMin=0.0, seqMax=1.0):
 
     return color, (xResult, yResult, zResult)
 
-def latk_video_main(inputPath, outputPath, dim=1024, tilePixelSize=8, tileSubdiv=16, framerate=12, debug=False):
+def latk_video_main(outputPath, dim=1024, tilePixelSize=8, tileSubdiv=16, framerate=12):
     #argv = sys.argv
     #argv = argv[argv.index("--") + 1:] # get all args after "--"
 
@@ -133,6 +128,8 @@ def latk_video_main(inputPath, outputPath, dim=1024, tilePixelSize=8, tileSubdiv
     #tileSubdiv = int(argv[4]) # 16
     #framerate = argv[5] # 30
     # * * * * * * * * * * * * *
+    obj = ss()
+    obj_type = obj.type.lower()
 
     tileDim = int(dim / tilePixelSize) 
     newSampleNum = tileDim * tileDim #mesh.vertex_number()
@@ -148,25 +145,7 @@ def latk_video_main(inputPath, outputPath, dim=1024, tilePixelSize=8, tileSubdiv
     # 1. First pass, to resample and get dimensions for normalizing coordinates
     urls = []
     counter = 0
-
-    if (debug == True):
-        imgTest1 = Image.open("test/orig.png")
-        imgTest1Pixels = imgTest1.load()
-        for i in range(0, imgTest1.width * imgTest1.height):
-            x, y = xyFromLoc(i, imgTest1.width)
-            col = imgTest1Pixels[x, y]
-            imgTest1Pixels[x, y] = encoder(float(col[0]) / 255.0)
-        imgTest1.save("test/test1.png")
-        
-        imgTest2 = Image.open("test/test1.png")
-        imgTest2Pixels = imgTest2.load()
-        for i in range(0, imgTest2.width * imgTest2.height):
-            x, y = xyFromLoc(i, imgTest2.width)
-            d = rgbToHue(colorIntToColorFloat(imgTest2Pixels[x, y]))
-            imgTest2Pixels[x, y] = colorFloatToColorInt((d, d, d))
-        imgTest2.save("test/test2.png")
-        print ("Wrote test images.")
-    
+   
     for fileName in os.listdir(inputPath):
         fileName = fileName.lower()
         if fileName.endswith("obj") or fileName.endswith("ply") or fileName.endswith("latk"): 
@@ -176,13 +155,9 @@ def latk_video_main(inputPath, outputPath, dim=1024, tilePixelSize=8, tileSubdiv
 
     numLatks = 0
     currentLatk = 0
-    for url in urls:
-        if (url.endswith("latk")):
-            numLatks += 1  
-    print ("Found " + str(numLatks) + " latk files.")
 
     for i, url in enumerate(urls):  
-        if url.endswith("latk"):
+        if (obj_type == "gpencil"):
             print("\nGenerating meshes from latk " + str(currentLatk+1) + " / " + str(numLatks))
             currentLatk += 1
             # https://pymeshlab.readthedocs.io/en/0.1.9/tutorials/import_mesh_from_arrays.html
@@ -273,7 +248,7 @@ def latk_video_main(inputPath, outputPath, dim=1024, tilePixelSize=8, tileSubdiv
 
                 print("Resampled Latk frame " + str(counter+1))
                 counter += 1
-        else:
+        elif (obj_type == "mesh"):
             print("\nLoading meshes " + str(i+1) + " / " + str(len(urls)))
             ms = ml.MeshSet()
             ms.load_new_mesh(url)
