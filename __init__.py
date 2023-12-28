@@ -45,6 +45,7 @@ import platform
 import argparse
 import numpy as np
 
+from . latk_video import *
 
 class LatkVideoPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
